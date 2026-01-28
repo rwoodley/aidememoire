@@ -11,6 +11,9 @@ builder.Services.AddScoped<IPairsRepository, S3PairsRepository>();
 
 var app = builder.Build();
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseSwagger();
 app.UseSwaggerUI();
 
