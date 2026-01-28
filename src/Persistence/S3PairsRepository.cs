@@ -16,7 +16,7 @@ public class S3PairsRepository : IPairsRepository
 
     public async Task AddPairAsync(string bucketName, string prompt, string response)
     {
-        var objectKey = $"aidememoire/1111/{bucketName}.csv";
+        var objectKey = $"1111/{bucketName}.csv";
         var existingContent = await GetExistingContentAsync(objectKey);
         var newRow = $"{EscapeCsvField(prompt)},{EscapeCsvField(response)}";
         var updatedContent = string.IsNullOrEmpty(existingContent)
@@ -59,6 +59,41 @@ public class S3PairsRepository : IPairsRepository
         await _s3Client.PutObjectAsync(request);
     }
 
+    public async Task AppendCsvContentAsync(string bucketName, string csvContent)
+    {
+        var objectKey = $"1111/{bucketName}.csv";
+        var existingContent = await GetExistingContentAsync(objectKey);
+        var updatedContent = string.IsNullOrEmpty(existingContent)
+            ? csvContent
+            : existingContent + Environment.NewLine + csvContent;
+
+        await UploadContentAsync(objectKey, updatedContent);
+    }
+
+    public async Task<Pair?> GetRandomPairAsync(string bucketName)
+    {
+        var objectKey = $"1111/{bucketName}.csv";
+        var content = await GetExistingContentAsync(objectKey);
+
+        if (string.IsNullOrEmpty(content))
+            return null;
+
+        var lines = ParseCsvLines(content)
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .ToList();
+
+        if (lines.Count == 0)
+            return null;
+
+        var randomIndex = Random.Shared.Next(lines.Count);
+        var columns = ParseCsvColumns(lines[randomIndex]);
+
+        if (columns.Count < 2)
+            return null;
+
+        return new Pair(columns[0], columns[1]);
+    }
+
     private static string EscapeCsvField(string field)
     {
         if (field.Contains(',') || field.Contains('\n') || field.Contains('"'))
@@ -67,5 +102,74 @@ public class S3PairsRepository : IPairsRepository
             return $"\"{escaped}\"";
         }
         return field;
+    }
+
+    private static List<string> ParseCsvLines(string content)
+    {
+        var lines = new List<string>();
+        var currentLine = new System.Text.StringBuilder();
+        var inQuotes = false;
+
+        foreach (var ch in content)
+        {
+            if (ch == '"')
+            {
+                inQuotes = !inQuotes;
+                currentLine.Append(ch);
+            }
+            else if (ch == '\n' && !inQuotes)
+            {
+                lines.Add(currentLine.ToString().TrimEnd('\r'));
+                currentLine.Clear();
+            }
+            else
+            {
+                currentLine.Append(ch);
+            }
+        }
+
+        if (currentLine.Length > 0)
+        {
+            lines.Add(currentLine.ToString().TrimEnd('\r'));
+        }
+
+        return lines;
+    }
+
+    private static List<string> ParseCsvColumns(string line)
+    {
+        var columns = new List<string>();
+        var current = new System.Text.StringBuilder();
+        var inQuotes = false;
+
+        for (var i = 0; i < line.Length; i++)
+        {
+            var ch = line[i];
+
+            if (ch == '"')
+            {
+                if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
+                {
+                    current.Append('"');
+                    i++;
+                }
+                else
+                {
+                    inQuotes = !inQuotes;
+                }
+            }
+            else if (ch == ',' && !inQuotes)
+            {
+                columns.Add(current.ToString());
+                current.Clear();
+            }
+            else
+            {
+                current.Append(ch);
+            }
+        }
+
+        columns.Add(current.ToString());
+        return columns;
     }
 }
