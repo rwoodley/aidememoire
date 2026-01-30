@@ -137,6 +137,37 @@ public class S3PairsRepository : IPairsRepository
             .ToList();
     }
 
+    public async Task DeleteBucketAsync(string bucketName)
+    {
+        var request = new DeleteObjectRequest
+        {
+            BucketName = S3BucketName,
+            Key = $"1111/{bucketName}.csv"
+        };
+
+        await _s3Client.DeleteObjectAsync(request);
+    }
+
+    public async Task RenameBucketAsync(string oldName, string newName)
+    {
+        var oldKey = $"1111/{oldName}.csv";
+        var newKey = $"1111/{newName}.csv";
+
+        await _s3Client.CopyObjectAsync(new CopyObjectRequest
+        {
+            SourceBucket = S3BucketName,
+            SourceKey = oldKey,
+            DestinationBucket = S3BucketName,
+            DestinationKey = newKey
+        });
+
+        await _s3Client.DeleteObjectAsync(new DeleteObjectRequest
+        {
+            BucketName = S3BucketName,
+            Key = oldKey
+        });
+    }
+
     private static string EscapeCsvField(string field)
     {
         if (field.Contains(',') || field.Contains('\n') || field.Contains('"'))

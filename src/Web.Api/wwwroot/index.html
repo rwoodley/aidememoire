@@ -305,6 +305,7 @@
     <nav class="menu" id="menu">
         <div class="menu-header">AideMemoire</div>
         <button class="menu-item" id="uploadMenuItem">Upload List</button>
+        <button class="menu-item" id="manageMenuItem">Manage Lists</button>
     </nav>
 
     <div class="container" id="container">
@@ -345,7 +346,7 @@
         }
 
         // Set bucket name in top bar
-        bucketText.textContent = getBucketName() || 'Select bucket';
+        bucketText.textContent = getBucketName() || 'Select List';
 
         // Bucket dropdown
         bucketLabel.addEventListener('click', async (e) => {
@@ -420,10 +421,15 @@
             window.location.href = bucket ? `/upload.html?bucket=${encodeURIComponent(bucket)}` : '/upload.html';
         });
 
+        document.getElementById('manageMenuItem').addEventListener('click', () => {
+            closeMenu();
+            window.location.href = '/manage.html';
+        });
+
         async function fetchRandomPair(retries = 3) {
             const bucket = getBucketName();
             if (!bucket) {
-                throw new Error('No bucket specified. Use ?bucket=name in the URL.');
+                throw new Error('No list specified.');
             }
 
             for (let i = 0; i < retries; i++) {

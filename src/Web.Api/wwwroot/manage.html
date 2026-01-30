@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AideMemoire - Manage Lists</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 18px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            display: flex;
+            flex-direction: column;
+            background: #121212;
+            color: #e0e0e0;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+        }
+
+        .hamburger {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            padding: 8px;
+            line-height: 1;
+            color: #e0e0e0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .page-title {
+            font-size: 1rem;
+            color: #aaa;
+            font-weight: 500;
+        }
+
+        .menu-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 10;
+        }
+
+        .menu-overlay.open {
+            display: block;
+        }
+
+        .menu {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: #1e1e1e;
+            z-index: 20;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
+            transition: left 0.25s ease;
+            padding: 20px 0;
+        }
+
+        .menu.open {
+            left: 0;
+        }
+
+        .menu-header {
+            font-size: 1.25rem;
+            font-weight: 600;
+            padding: 16px 24px;
+            color: #e0e0e0;
+            border-bottom: 1px solid #383838;
+            margin-bottom: 8px;
+        }
+
+        .menu-item {
+            display: block;
+            width: 100%;
+            padding: 16px 24px;
+            font-size: 1.1rem;
+            background: none;
+            border: none;
+            text-align: left;
+            cursor: pointer;
+            color: #e0e0e0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .menu-item:hover {
+            background: #2a2a2a;
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px;
+        }
+
+        .manage-card {
+            background: #1e1e1e;
+            border-radius: 20px;
+            padding: 32px 24px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .manage-card h2 {
+            font-size: 1.5rem;
+            color: #f0f0f0;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .bucket-list {
+            list-style: none;
+        }
+
+        .bucket-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .bucket-item:last-child {
+            border-bottom: none;
+        }
+
+        .bucket-item-name {
+            font-size: 1.1rem;
+            color: #e0e0e0;
+            flex: 1;
+        }
+
+        .bucket-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-rename, .btn-delete {
+            padding: 10px 16px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .btn-rename {
+            background: #2a2a2a;
+            color: #0a84ff;
+        }
+
+        .btn-rename:hover {
+            background: #383838;
+        }
+
+        .btn-delete {
+            background: #2a1a1a;
+            color: #ff453a;
+        }
+
+        .btn-delete:hover {
+            background: #3a2020;
+        }
+
+        .btn-rename:active, .btn-delete:active {
+            transform: scale(0.96);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #777;
+            font-size: 1.1rem;
+            padding: 32px 0;
+        }
+
+        .loading-state {
+            text-align: center;
+            color: #777;
+            font-size: 1.1rem;
+            padding: 32px 0;
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 1rem;
+            min-height: 1.5em;
+        }
+
+        .status.success { color: #30d158; }
+        .status.error { color: #ff453a; }
+
+        .confirm-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 50;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .confirm-overlay.open {
+            display: flex;
+        }
+
+        .confirm-dialog {
+            background: #2a2a2a;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+            width: calc(100% - 32px);
+            text-align: center;
+        }
+
+        .confirm-dialog p {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            color: #e0e0e0;
+        }
+
+        .confirm-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .btn-confirm-cancel, .btn-confirm-delete {
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            flex: 1;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-confirm-cancel {
+            background: #383838;
+            color: #e0e0e0;
+        }
+
+        .btn-confirm-delete {
+            background: #ff453a;
+            color: white;
+        }
+
+        @media (max-width: 480px) {
+            html {
+                font-size: 16px;
+            }
+
+            .manage-card {
+                padding: 24px 20px;
+                border-radius: 16px;
+            }
+        }
+
+        @media (min-width: 768px) {
+            html {
+                font-size: 20px;
+            }
+
+            .manage-card {
+                padding: 48px 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <button class="hamburger" id="menuButton">&#9776;</button>
+        <span class="page-title">Manage Lists</span>
+    </div>
+
+    <div class="menu-overlay" id="menuOverlay"></div>
+    <nav class="menu" id="menu">
+        <div class="menu-header">AideMemoire</div>
+        <button class="menu-item" id="drillMenuItem">Drill</button>
+        <button class="menu-item" id="uploadMenuItem">Upload List</button>
+    </nav>
+
+    <div class="confirm-overlay" id="confirmOverlay">
+        <div class="confirm-dialog">
+            <p id="confirmMessage">Are you sure?</p>
+            <div class="confirm-buttons">
+                <button class="btn-confirm-cancel" id="confirmCancel">Cancel</button>
+                <button class="btn-confirm-delete" id="confirmDelete">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="manage-card">
+            <h2>Manage Lists</h2>
+            <div id="bucketListContainer">
+                <div class="loading-state">Loading...</div>
+            </div>
+            <div class="status" id="status"></div>
+        </div>
+    </div>
+
+    <script>
+        const menuButton = document.getElementById('menuButton');
+        const menu = document.getElementById('menu');
+        const menuOverlay = document.getElementById('menuOverlay');
+        const drillMenuItem = document.getElementById('drillMenuItem');
+        const uploadMenuItem = document.getElementById('uploadMenuItem');
+        const bucketListContainer = document.getElementById('bucketListContainer');
+        const statusEl = document.getElementById('status');
+        const confirmOverlay = document.getElementById('confirmOverlay');
+        const confirmMessage = document.getElementById('confirmMessage');
+        const confirmCancel = document.getElementById('confirmCancel');
+        const confirmDeleteBtn = document.getElementById('confirmDelete');
+
+        let pendingDeleteName = null;
+
+        function openMenu() {
+            menu.classList.add('open');
+            menuOverlay.classList.add('open');
+        }
+
+        function closeMenu() {
+            menu.classList.remove('open');
+            menuOverlay.classList.remove('open');
+        }
+
+        menuButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openMenu();
+        });
+
+        menuOverlay.addEventListener('click', closeMenu);
+
+        drillMenuItem.addEventListener('click', () => {
+            closeMenu();
+            window.location.href = '/';
+        });
+
+        uploadMenuItem.addEventListener('click', () => {
+            closeMenu();
+            window.location.href = '/upload.html';
+        });
+
+        function showStatus(message, type) {
+            statusEl.textContent = message;
+            statusEl.className = 'status' + (type ? ' ' + type : '');
+        }
+
+        async function loadBuckets() {
+            bucketListContainer.innerHTML = '<div class="loading-state">Loading...</div>';
+
+            try {
+                const response = await fetch('/api/pairs/buckets');
+                const buckets = await response.json();
+
+                if (buckets.length === 0) {
+                    bucketListContainer.innerHTML = '<div class="empty-state">No lists found.</div>';
+                    return;
+                }
+
+                const list = document.createElement('ul');
+                list.className = 'bucket-list';
+
+                buckets.forEach(name => {
+                    const item = document.createElement('li');
+                    item.className = 'bucket-item';
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'bucket-item-name';
+                    nameSpan.textContent = name;
+
+                    const actions = document.createElement('div');
+                    actions.className = 'bucket-actions';
+
+                    const renameBtn = document.createElement('button');
+                    renameBtn.className = 'btn-rename';
+                    renameBtn.textContent = 'Rename';
+                    renameBtn.addEventListener('click', () => renameBucket(name));
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'btn-delete';
+                    deleteBtn.textContent = 'Delete';
+                    deleteBtn.addEventListener('click', () => confirmDelete(name));
+
+                    actions.appendChild(renameBtn);
+                    actions.appendChild(deleteBtn);
+                    item.appendChild(nameSpan);
+                    item.appendChild(actions);
+                    list.appendChild(item);
+                });
+
+                bucketListContainer.innerHTML = '';
+                bucketListContainer.appendChild(list);
+            } catch {
+                bucketListContainer.innerHTML = '<div class="empty-state" style="color:#ff453a">Failed to load lists.</div>';
+            }
+        }
+
+        function confirmDelete(name) {
+            pendingDeleteName = name;
+            confirmMessage.textContent = `Delete "${name}"? This cannot be undone.`;
+            confirmOverlay.classList.add('open');
+        }
+
+        confirmCancel.addEventListener('click', () => {
+            confirmOverlay.classList.remove('open');
+            pendingDeleteName = null;
+        });
+
+        confirmOverlay.addEventListener('click', (e) => {
+            if (e.target === confirmOverlay) {
+                confirmOverlay.classList.remove('open');
+                pendingDeleteName = null;
+            }
+        });
+
+        confirmDeleteBtn.addEventListener('click', async () => {
+            confirmOverlay.classList.remove('open');
+            const name = pendingDeleteName;
+            pendingDeleteName = null;
+
+            if (!name) return;
+
+            try {
+                const response = await fetch(`/api/pairs/buckets/${encodeURIComponent(name)}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    showStatus(`"${name}" deleted.`, 'success');
+                    await loadBuckets();
+                } else {
+                    showStatus('Delete failed.', 'error');
+                }
+            } catch {
+                showStatus('Network error.', 'error');
+            }
+        });
+
+        async function renameBucket(oldName) {
+            const newName = prompt(`Rename "${oldName}" to:`, oldName);
+            if (!newName || newName.trim() === '' || newName.trim() === oldName) return;
+
+            try {
+                const response = await fetch(`/api/pairs/buckets/${encodeURIComponent(oldName)}/rename`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ newName: newName.trim() })
+                });
+
+                if (response.ok) {
+                    showStatus(`Renamed to "${newName.trim()}".`, 'success');
+                    await loadBuckets();
+                } else {
+                    const text = await response.text();
+                    showStatus(text || 'Rename failed.', 'error');
+                }
+            } catch {
+                showStatus('Network error.', 'error');
+            }
+        }
+
+        loadBuckets();
+    </script>
+</body>
+</html>

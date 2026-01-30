@@ -356,6 +356,7 @@
     <nav class="menu" id="menu">
         <div class="menu-header">AideMemoire</div>
         <button class="menu-item" id="drillMenuItem">Drill</button>
+        <button class="menu-item" id="manageMenuItem">Manage Lists</button>
     </nav>
 
     <div class="container">
@@ -409,7 +410,7 @@
 
         // Set bucket name in top bar and heading
         const currentBucketName = getBucketName() || '';
-        bucketText.textContent = currentBucketName || 'Select bucket';
+        bucketText.textContent = currentBucketName || 'Select List';
         uploadHeading.textContent = currentBucketName
             ? `Upload CSV to ${currentBucketName}`
             : 'Upload CSV';
@@ -489,6 +490,11 @@
             window.location.href = bucket ? `/?bucket=${encodeURIComponent(bucket)}` : '/';
         });
 
+        document.getElementById('manageMenuItem').addEventListener('click', () => {
+            closeMenu();
+            window.location.href = '/manage.html';
+        });
+
         fileInput.addEventListener('change', () => {
             if (fileInput.files.length > 0) {
                 fileLabel.textContent = fileInput.files[0].name;
@@ -508,7 +514,7 @@
         uploadButton.addEventListener('click', async () => {
             const bucket = getBucketName();
             if (!bucket) {
-                showStatus('No bucket specified in URL.', 'error');
+                showStatus('No list specified in URL.', 'error');
                 return;
             }
 

@@ -42,6 +42,23 @@ public partial class PairsController : ControllerBase
         return Ok(new { pair.Prompt, pair.Response });
     }
 
+    [HttpDelete("buckets/{bucketName}")]
+    public async Task<IActionResult> DeleteBucket(
+        [RegularExpression(@"^[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$")] string bucketName)
+    {
+        await _pairsRepository.DeleteBucketAsync(bucketName);
+        return Ok();
+    }
+
+    [HttpPut("buckets/{bucketName}/rename")]
+    public async Task<IActionResult> RenameBucket(
+        [RegularExpression(@"^[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$")] string bucketName,
+        [FromBody] RenameBucketRequest request)
+    {
+        await _pairsRepository.RenameBucketAsync(bucketName, request.NewName);
+        return Ok();
+    }
+
     [HttpPost("bulk")]
     public async Task<IActionResult> BulkUpload([FromForm] BulkUploadRequest request)
     {
