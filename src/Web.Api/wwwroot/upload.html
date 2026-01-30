@@ -21,7 +21,8 @@
             min-height: -webkit-fill-available;
             display: flex;
             flex-direction: column;
-            background: #f5f5f5;
+            background: #121212;
+            color: #e0e0e0;
         }
 
         .top-bar {
@@ -38,13 +39,13 @@
             cursor: pointer;
             padding: 8px;
             line-height: 1;
-            color: #333;
+            color: #e0e0e0;
             -webkit-tap-highlight-color: transparent;
         }
 
         .bucket-name {
             font-size: 1rem;
-            color: #007aff;
+            color: #0a84ff;
             font-weight: 500;
             cursor: pointer;
             padding: 8px 12px;
@@ -54,7 +55,7 @@
         }
 
         .bucket-name:hover {
-            background: #f0f0f0;
+            background: #2a2a2a;
         }
 
         .bucket-dropdown {
@@ -62,9 +63,9 @@
             position: absolute;
             top: 100%;
             right: 0;
-            background: white;
+            background: #2a2a2a;
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
             min-width: 200px;
             z-index: 30;
             overflow: hidden;
@@ -83,22 +84,22 @@
             border: none;
             text-align: left;
             cursor: pointer;
-            color: #333;
+            color: #e0e0e0;
             -webkit-tap-highlight-color: transparent;
         }
 
         .bucket-dropdown-item:hover {
-            background: #f0f0f0;
+            background: #383838;
         }
 
         .bucket-dropdown-item.active {
-            color: #007aff;
+            color: #0a84ff;
             font-weight: 600;
         }
 
         .bucket-dropdown-item.new-bucket {
-            border-top: 1px solid #eee;
-            color: #007aff;
+            border-top: 1px solid #383838;
+            color: #0a84ff;
         }
 
         .menu-overlay {
@@ -122,9 +123,9 @@
             left: -280px;
             width: 280px;
             height: 100%;
-            background: white;
+            background: #1e1e1e;
             z-index: 20;
-            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
             transition: left 0.25s ease;
             padding: 20px 0;
         }
@@ -137,8 +138,8 @@
             font-size: 1.25rem;
             font-weight: 600;
             padding: 16px 24px;
-            color: #333;
-            border-bottom: 1px solid #eee;
+            color: #e0e0e0;
+            border-bottom: 1px solid #383838;
             margin-bottom: 8px;
         }
 
@@ -151,12 +152,12 @@
             border: none;
             text-align: left;
             cursor: pointer;
-            color: #333;
+            color: #e0e0e0;
             -webkit-tap-highlight-color: transparent;
         }
 
         .menu-item:hover {
-            background: #f0f0f0;
+            background: #2a2a2a;
         }
 
         .container {
@@ -168,17 +169,17 @@
         }
 
         .upload-card {
-            background: white;
+            background: #1e1e1e;
             border-radius: 20px;
             padding: 32px 24px;
             max-width: 600px;
             width: 100%;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
 
         .upload-card h2 {
             font-size: 1.5rem;
-            color: #333;
+            color: #f0f0f0;
             margin-bottom: 24px;
             text-align: center;
         }
@@ -186,7 +187,7 @@
         .section-label {
             font-size: 1rem;
             font-weight: 600;
-            color: #333;
+            color: #e0e0e0;
             margin-bottom: 12px;
             display: block;
         }
@@ -201,23 +202,23 @@
             align-items: center;
             justify-content: center;
             padding: 20px;
-            border: 2px dashed #ccc;
+            border: 2px dashed #555;
             border-radius: 12px;
             cursor: pointer;
             font-size: 1.1rem;
-            color: #666;
+            color: #aaa;
             transition: border-color 0.2s, background 0.2s;
         }
 
         .file-input-label:hover {
-            border-color: #007aff;
-            background: #f8f9ff;
+            border-color: #0a84ff;
+            background: #1a2a3a;
         }
 
         .file-input-label.has-file {
-            border-color: #34c759;
-            background: #f0faf3;
-            color: #333;
+            border-color: #30d158;
+            background: #1a2e1a;
+            color: #e0e0e0;
         }
 
         .file-input-wrapper input[type="file"] {
@@ -227,7 +228,7 @@
         .divider {
             text-align: center;
             margin: 24px 0;
-            color: #999;
+            color: #777;
             font-size: 1rem;
             position: relative;
         }
@@ -239,7 +240,7 @@
             top: 50%;
             width: 40%;
             height: 1px;
-            background: #ddd;
+            background: #383838;
         }
 
         .divider::before { left: 0; }
@@ -249,21 +250,23 @@
             width: 100%;
             min-height: 200px;
             padding: 16px;
-            border: 2px solid #ddd;
+            border: 2px solid #444;
             border-radius: 12px;
             font-family: monospace;
             font-size: 0.9rem;
             resize: vertical;
             outline: none;
             transition: border-color 0.2s;
+            background: #2a2a2a;
+            color: #e0e0e0;
         }
 
         .paste-area:focus {
-            border-color: #007aff;
+            border-color: #0a84ff;
         }
 
         .paste-area::placeholder {
-            color: #aaa;
+            color: #666;
         }
 
         .button-container {
@@ -279,7 +282,7 @@
             padding: 24px 48px;
             font-size: 1.5rem;
             font-weight: 600;
-            background: #007aff;
+            background: #0a84ff;
             color: white;
             border: none;
             border-radius: 16px;
@@ -289,7 +292,7 @@
         }
 
         .upload-button:hover {
-            background: #0056b3;
+            background: #0070e0;
         }
 
         .upload-button:active {
@@ -297,7 +300,7 @@
         }
 
         .upload-button:disabled {
-            background: #ccc;
+            background: #444;
             cursor: not-allowed;
             transform: none;
         }
@@ -309,8 +312,8 @@
             min-height: 1.5em;
         }
 
-        .status.success { color: #34c759; }
-        .status.error { color: #d32f2f; }
+        .status.success { color: #30d158; }
+        .status.error { color: #ff453a; }
 
         @media (max-width: 480px) {
             html {
