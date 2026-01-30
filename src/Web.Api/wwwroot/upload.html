@@ -514,7 +514,7 @@
         uploadButton.addEventListener('click', async () => {
             const bucket = getBucketName();
             if (!bucket) {
-                showStatus('No list specified in URL.', 'error');
+                showStatus('No list selected.', 'error');
                 return;
             }
 
