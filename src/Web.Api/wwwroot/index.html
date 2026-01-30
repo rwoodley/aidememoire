@@ -335,6 +335,7 @@
 
         let currentPrompt = null;
         let responseRevealed = false;
+        let activeBucket = null;
 
         function getBucketName() {
             const params = new URLSearchParams(window.location.search);
@@ -345,8 +346,22 @@
             window.location.href = `/?bucket=${encodeURIComponent(name)}`;
         }
 
-        // Set bucket name in top bar
-        bucketText.textContent = getBucketName() || 'Select List';
+        async function resolveActiveBucket() {
+            const fromUrl = getBucketName();
+            if (fromUrl) return fromUrl;
+
+            try {
+                const res = await fetch('/api/pairs/default');
+                if (res.ok) {
+                    const data = await res.json();
+                    return data.bucketName;
+                }
+            } catch {}
+            return null;
+        }
+
+        // Set bucket name in top bar (updated after init)
+        bucketText.textContent = getBucketName() || 'Loading...';
 
         // Bucket dropdown
         bucketLabel.addEventListener('click', async (e) => {
@@ -417,8 +432,7 @@
 
         uploadMenuItem.addEventListener('click', () => {
             closeMenu();
-            const bucket = getBucketName();
-            window.location.href = bucket ? `/upload.html?bucket=${encodeURIComponent(bucket)}` : '/upload.html';
+            window.location.href = activeBucket ? `/upload.html?bucket=${encodeURIComponent(activeBucket)}` : '/upload.html';
         });
 
         document.getElementById('manageMenuItem').addEventListener('click', () => {
@@ -427,9 +441,9 @@
         });
 
         async function fetchRandomPair(retries = 3) {
-            const bucket = getBucketName();
+            const bucket = activeBucket;
             if (!bucket) {
-                throw new Error('No list specified.');
+                throw new Error('No list specified. Select a list or set a default in Manage Lists.');
             }
 
             for (let i = 0; i < retries; i++) {
@@ -488,7 +502,11 @@
             loadNewPair();
         });
 
-        loadNewPair();
+        (async () => {
+            activeBucket = await resolveActiveBucket();
+            bucketText.textContent = activeBucket || 'Select List';
+            loadNewPair();
+        })();
     </script>
 </body>
 </html>

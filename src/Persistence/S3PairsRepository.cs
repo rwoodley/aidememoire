@@ -168,6 +168,40 @@ public class S3PairsRepository : IPairsRepository
         });
     }
 
+    public async Task<string?> GetDefaultBucketAsync()
+    {
+        try
+        {
+            var request = new GetObjectRequest
+            {
+                BucketName = S3BucketName,
+                Key = "1111/.default"
+            };
+
+            using var response = await _s3Client.GetObjectAsync(request);
+            using var reader = new StreamReader(response.ResponseStream);
+            var name = (await reader.ReadToEndAsync()).Trim();
+            return string.IsNullOrEmpty(name) ? null : name;
+        }
+        catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+    }
+
+    public async Task SetDefaultBucketAsync(string bucketName)
+    {
+        var request = new PutObjectRequest
+        {
+            BucketName = S3BucketName,
+            Key = "1111/.default",
+            ContentBody = bucketName,
+            ContentType = "text/plain"
+        };
+
+        await _s3Client.PutObjectAsync(request);
+    }
+
     private static string EscapeCsvField(string field)
     {
         if (field.Contains(',') || field.Contains('\n') || field.Contains('"'))

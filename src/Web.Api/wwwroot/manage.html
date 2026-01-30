@@ -147,6 +147,40 @@
             border-bottom: none;
         }
 
+        .bucket-item-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .default-radio {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border: 2px solid #555;
+            border-radius: 50%;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .default-radio:checked {
+            border-color: #0a84ff;
+        }
+
+        .default-radio:checked::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 10px;
+            height: 10px;
+            background: #0a84ff;
+            border-radius: 50%;
+        }
+
         .bucket-item-name {
             font-size: 1.1rem;
             color: #e0e0e0;
@@ -343,6 +377,7 @@
         const confirmDeleteBtn = document.getElementById('confirmDelete');
 
         let pendingDeleteName = null;
+        let defaultBucket = null;
 
         function openMenu() {
             menu.classList.add('open');
@@ -380,8 +415,13 @@
             bucketListContainer.innerHTML = '<div class="loading-state">Loading...</div>';
 
             try {
-                const response = await fetch('/api/pairs/buckets');
-                const buckets = await response.json();
+                const [bucketsRes, defaultRes] = await Promise.all([
+                    fetch('/api/pairs/buckets'),
+                    fetch('/api/pairs/default')
+                ]);
+
+                const buckets = await bucketsRes.json();
+                defaultBucket = defaultRes.ok ? (await defaultRes.json()).bucketName : null;
 
                 if (buckets.length === 0) {
                     bucketListContainer.innerHTML = '<div class="empty-state">No lists found.</div>';
@@ -395,9 +435,22 @@
                     const item = document.createElement('li');
                     item.className = 'bucket-item';
 
+                    const left = document.createElement('div');
+                    left.className = 'bucket-item-left';
+
+                    const radio = document.createElement('input');
+                    radio.type = 'radio';
+                    radio.name = 'defaultBucket';
+                    radio.className = 'default-radio';
+                    radio.checked = name === defaultBucket;
+                    radio.addEventListener('change', () => setDefault(name));
+
                     const nameSpan = document.createElement('span');
                     nameSpan.className = 'bucket-item-name';
                     nameSpan.textContent = name;
+
+                    left.appendChild(radio);
+                    left.appendChild(nameSpan);
 
                     const actions = document.createElement('div');
                     actions.className = 'bucket-actions';
@@ -414,7 +467,7 @@
 
                     actions.appendChild(renameBtn);
                     actions.appendChild(deleteBtn);
-                    item.appendChild(nameSpan);
+                    item.appendChild(left);
                     item.appendChild(actions);
                     list.appendChild(item);
                 });
@@ -423,6 +476,27 @@
                 bucketListContainer.appendChild(list);
             } catch {
                 bucketListContainer.innerHTML = '<div class="empty-state" style="color:#ff453a">Failed to load lists.</div>';
+            }
+        }
+
+        async function setDefault(name) {
+            try {
+                const response = await fetch('/api/pairs/default', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bucketName: name })
+                });
+
+                if (response.ok) {
+                    defaultBucket = name;
+                    showStatus(`"${name}" set as default.`, 'success');
+                } else {
+                    showStatus('Failed to set default.', 'error');
+                    await loadBuckets();
+                }
+            } catch {
+                showStatus('Network error.', 'error');
+                await loadBuckets();
             }
         }
 

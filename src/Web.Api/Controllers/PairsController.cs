@@ -59,6 +59,23 @@ public partial class PairsController : ControllerBase
         return Ok();
     }
 
+    [HttpGet("default")]
+    public async Task<IActionResult> GetDefaultBucket()
+    {
+        var name = await _pairsRepository.GetDefaultBucketAsync();
+        if (name == null)
+            return NotFound();
+
+        return Ok(new { bucketName = name });
+    }
+
+    [HttpPut("default")]
+    public async Task<IActionResult> SetDefaultBucket([FromBody] SetDefaultBucketRequest request)
+    {
+        await _pairsRepository.SetDefaultBucketAsync(request.BucketName);
+        return Ok();
+    }
+
     [HttpPost("bulk")]
     public async Task<IActionResult> BulkUpload([FromForm] BulkUploadRequest request)
     {
