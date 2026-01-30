@@ -63,10 +63,37 @@ public class S3PairsRepository : IPairsRepository
     {
         var objectKey = $"1111/{bucketName}.csv";
         var existingContent = await GetExistingContentAsync(objectKey);
-        var updatedContent = string.IsNullOrEmpty(existingContent)
-            ? csvContent
-            : existingContent + Environment.NewLine + csvContent;
 
+        // Build a dictionary keyed by prompt, preserving insertion order via a list.
+        // Existing pairs go in first, then new pairs overwrite duplicates (last in wins).
+        var pairs = new Dictionary<string, string>();
+        var orderedPrompts = new List<string>();
+
+        void AddPairs(string content)
+        {
+            foreach (var line in ParseCsvLines(content))
+            {
+                if (string.IsNullOrWhiteSpace(line))
+                    continue;
+
+                var columns = ParseCsvColumns(line);
+                if (columns.Count < 2)
+                    continue;
+
+                var prompt = columns[0];
+                if (!pairs.ContainsKey(prompt))
+                    orderedPrompts.Add(prompt);
+
+                pairs[prompt] = line;
+            }
+        }
+
+        if (!string.IsNullOrEmpty(existingContent))
+            AddPairs(existingContent);
+
+        AddPairs(csvContent);
+
+        var updatedContent = string.Join(Environment.NewLine, orderedPrompts.Select(p => pairs[p]));
         await UploadContentAsync(objectKey, updatedContent);
     }
 
