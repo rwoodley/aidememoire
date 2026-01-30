@@ -44,8 +44,61 @@
 
         .bucket-name {
             font-size: 1rem;
-            color: #666;
+            color: #007aff;
             font-weight: 500;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+            -webkit-tap-highlight-color: transparent;
+            position: relative;
+        }
+
+        .bucket-name:hover {
+            background: #f0f0f0;
+        }
+
+        .bucket-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            min-width: 200px;
+            z-index: 30;
+            overflow: hidden;
+        }
+
+        .bucket-dropdown.open {
+            display: block;
+        }
+
+        .bucket-dropdown-item {
+            display: block;
+            width: 100%;
+            padding: 14px 20px;
+            font-size: 1rem;
+            background: none;
+            border: none;
+            text-align: left;
+            cursor: pointer;
+            color: #333;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .bucket-dropdown-item:hover {
+            background: #f0f0f0;
+        }
+
+        .bucket-dropdown-item.active {
+            color: #007aff;
+            font-weight: 600;
+        }
+
+        .bucket-dropdown-item.new-bucket {
+            border-top: 1px solid #eee;
+            color: #007aff;
         }
 
         .menu-overlay {
@@ -241,7 +294,10 @@
 <body>
     <div class="top-bar">
         <button class="hamburger" id="menuButton">&#9776;</button>
-        <span class="bucket-name" id="bucketLabel"></span>
+        <span class="bucket-name" id="bucketLabel">
+            <span id="bucketText"></span> &#9662;
+            <div class="bucket-dropdown" id="bucketDropdown"></div>
+        </span>
     </div>
 
     <div class="menu-overlay" id="menuOverlay"></div>
@@ -271,6 +327,8 @@
         const menu = document.getElementById('menu');
         const menuOverlay = document.getElementById('menuOverlay');
         const bucketLabel = document.getElementById('bucketLabel');
+        const bucketText = document.getElementById('bucketText');
+        const bucketDropdown = document.getElementById('bucketDropdown');
         const uploadMenuItem = document.getElementById('uploadMenuItem');
 
         let currentPrompt = null;
@@ -281,8 +339,61 @@
             return params.get('bucket');
         }
 
+        function switchBucket(name) {
+            window.location.href = `/?bucket=${encodeURIComponent(name)}`;
+        }
+
         // Set bucket name in top bar
-        bucketLabel.textContent = getBucketName() || '';
+        bucketText.textContent = getBucketName() || 'Select bucket';
+
+        // Bucket dropdown
+        bucketLabel.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (bucketDropdown.classList.contains('open')) {
+                bucketDropdown.classList.remove('open');
+                return;
+            }
+
+            bucketDropdown.innerHTML = '<div class="bucket-dropdown-item" style="color:#999">Loading...</div>';
+            bucketDropdown.classList.add('open');
+
+            try {
+                const response = await fetch('/api/pairs/buckets');
+                const buckets = await response.json();
+                const currentBucket = getBucketName();
+
+                bucketDropdown.innerHTML = '';
+                buckets.forEach(name => {
+                    const item = document.createElement('button');
+                    item.className = 'bucket-dropdown-item' + (name === currentBucket ? ' active' : '');
+                    item.textContent = name;
+                    item.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        switchBucket(name);
+                    });
+                    bucketDropdown.appendChild(item);
+                });
+
+                const newItem = document.createElement('button');
+                newItem.className = 'bucket-dropdown-item new-bucket';
+                newItem.textContent = '+ New Bucket';
+                newItem.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    bucketDropdown.classList.remove('open');
+                    const name = prompt('Enter new bucket name:');
+                    if (name && name.trim()) {
+                        switchBucket(name.trim());
+                    }
+                });
+                bucketDropdown.appendChild(newItem);
+            } catch {
+                bucketDropdown.innerHTML = '<div class="bucket-dropdown-item" style="color:#d32f2f">Failed to load</div>';
+            }
+        });
+
+        document.addEventListener('click', () => {
+            bucketDropdown.classList.remove('open');
+        });
 
         // Menu open/close
         function openMenu() {

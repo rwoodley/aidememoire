@@ -31,20 +31,132 @@
             padding: 12px 16px;
         }
 
-        .back-button {
+        .hamburger {
             background: none;
             border: none;
-            font-size: 1.5rem;
+            font-size: 2rem;
             cursor: pointer;
             padding: 8px;
-            color: #007aff;
+            line-height: 1;
+            color: #333;
             -webkit-tap-highlight-color: transparent;
         }
 
         .bucket-name {
             font-size: 1rem;
-            color: #666;
+            color: #007aff;
             font-weight: 500;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+            -webkit-tap-highlight-color: transparent;
+            position: relative;
+        }
+
+        .bucket-name:hover {
+            background: #f0f0f0;
+        }
+
+        .bucket-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            min-width: 200px;
+            z-index: 30;
+            overflow: hidden;
+        }
+
+        .bucket-dropdown.open {
+            display: block;
+        }
+
+        .bucket-dropdown-item {
+            display: block;
+            width: 100%;
+            padding: 14px 20px;
+            font-size: 1rem;
+            background: none;
+            border: none;
+            text-align: left;
+            cursor: pointer;
+            color: #333;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .bucket-dropdown-item:hover {
+            background: #f0f0f0;
+        }
+
+        .bucket-dropdown-item.active {
+            color: #007aff;
+            font-weight: 600;
+        }
+
+        .bucket-dropdown-item.new-bucket {
+            border-top: 1px solid #eee;
+            color: #007aff;
+        }
+
+        .menu-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 10;
+        }
+
+        .menu-overlay.open {
+            display: block;
+        }
+
+        .menu {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: white;
+            z-index: 20;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+            transition: left 0.25s ease;
+            padding: 20px 0;
+        }
+
+        .menu.open {
+            left: 0;
+        }
+
+        .menu-header {
+            font-size: 1.25rem;
+            font-weight: 600;
+            padding: 16px 24px;
+            color: #333;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 8px;
+        }
+
+        .menu-item {
+            display: block;
+            width: 100%;
+            padding: 16px 24px;
+            font-size: 1.1rem;
+            background: none;
+            border: none;
+            text-align: left;
+            cursor: pointer;
+            color: #333;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .menu-item:hover {
+            background: #f0f0f0;
         }
 
         .container {
@@ -230,13 +342,22 @@
 </head>
 <body>
     <div class="top-bar">
-        <button class="back-button" id="backButton">&#8592; Back</button>
-        <span class="bucket-name" id="bucketLabel"></span>
+        <button class="hamburger" id="menuButton">&#9776;</button>
+        <span class="bucket-name" id="bucketLabel">
+            <span id="bucketText"></span> &#9662;
+            <div class="bucket-dropdown" id="bucketDropdown"></div>
+        </span>
     </div>
+
+    <div class="menu-overlay" id="menuOverlay"></div>
+    <nav class="menu" id="menu">
+        <div class="menu-header">AideMemoire</div>
+        <button class="menu-item" id="drillMenuItem">Drill</button>
+    </nav>
 
     <div class="container">
         <div class="upload-card">
-            <h2>Upload CSV</h2>
+            <h2 id="uploadHeading">Upload CSV</h2>
 
             <label class="section-label">Choose a file</label>
             <div class="file-input-wrapper">
@@ -264,8 +385,14 @@
         const fileLabel = document.getElementById('fileLabel');
         const pasteArea = document.getElementById('pasteArea');
         const uploadButton = document.getElementById('uploadButton');
-        const backButton = document.getElementById('backButton');
         const bucketLabel = document.getElementById('bucketLabel');
+        const bucketText = document.getElementById('bucketText');
+        const bucketDropdown = document.getElementById('bucketDropdown');
+        const uploadHeading = document.getElementById('uploadHeading');
+        const menuButton = document.getElementById('menuButton');
+        const menu = document.getElementById('menu');
+        const menuOverlay = document.getElementById('menuOverlay');
+        const uploadMenuItem = document.getElementById('uploadMenuItem');
         const statusEl = document.getElementById('status');
 
         function getBucketName() {
@@ -273,9 +400,88 @@
             return params.get('bucket');
         }
 
-        bucketLabel.textContent = getBucketName() || '';
+        function switchBucket(name) {
+            window.location.href = `/upload.html?bucket=${encodeURIComponent(name)}`;
+        }
 
-        backButton.addEventListener('click', () => {
+        // Set bucket name in top bar and heading
+        const currentBucketName = getBucketName() || '';
+        bucketText.textContent = currentBucketName || 'Select bucket';
+        uploadHeading.textContent = currentBucketName
+            ? `Upload CSV to ${currentBucketName}`
+            : 'Upload CSV';
+
+        // Bucket dropdown
+        bucketLabel.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (bucketDropdown.classList.contains('open')) {
+                bucketDropdown.classList.remove('open');
+                return;
+            }
+
+            bucketDropdown.innerHTML = '<div class="bucket-dropdown-item" style="color:#999">Loading...</div>';
+            bucketDropdown.classList.add('open');
+
+            try {
+                const response = await fetch('/api/pairs/buckets');
+                const buckets = await response.json();
+                const currentBucket = getBucketName();
+
+                bucketDropdown.innerHTML = '';
+                buckets.forEach(name => {
+                    const item = document.createElement('button');
+                    item.className = 'bucket-dropdown-item' + (name === currentBucket ? ' active' : '');
+                    item.textContent = name;
+                    item.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        switchBucket(name);
+                    });
+                    bucketDropdown.appendChild(item);
+                });
+
+                const newItem = document.createElement('button');
+                newItem.className = 'bucket-dropdown-item new-bucket';
+                newItem.textContent = '+ New Bucket';
+                newItem.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    bucketDropdown.classList.remove('open');
+                    const name = prompt('Enter new bucket name:');
+                    if (name && name.trim()) {
+                        switchBucket(name.trim());
+                    }
+                });
+                bucketDropdown.appendChild(newItem);
+            } catch {
+                bucketDropdown.innerHTML = '<div class="bucket-dropdown-item" style="color:#d32f2f">Failed to load</div>';
+            }
+        });
+
+        document.addEventListener('click', () => {
+            bucketDropdown.classList.remove('open');
+        });
+
+        // Menu open/close
+        function openMenu() {
+            menu.classList.add('open');
+            menuOverlay.classList.add('open');
+        }
+
+        function closeMenu() {
+            menu.classList.remove('open');
+            menuOverlay.classList.remove('open');
+        }
+
+        menuButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openMenu();
+        });
+
+        menuOverlay.addEventListener('click', closeMenu);
+
+        const drillMenuItem = document.getElementById('drillMenuItem');
+
+        drillMenuItem.addEventListener('click', () => {
+            closeMenu();
             const bucket = getBucketName();
             window.location.href = bucket ? `/?bucket=${encodeURIComponent(bucket)}` : '/';
         });

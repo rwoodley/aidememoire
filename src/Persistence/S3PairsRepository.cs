@@ -121,6 +121,22 @@ public class S3PairsRepository : IPairsRepository
         return new Pair(columns[0], columns[1]);
     }
 
+    public async Task<List<string>> ListBucketsAsync()
+    {
+        var request = new ListObjectsV2Request
+        {
+            BucketName = S3BucketName,
+            Prefix = "1111/"
+        };
+
+        var response = await _s3Client.ListObjectsV2Async(request);
+        return response.S3Objects
+            .Where(o => o.Key.EndsWith(".csv"))
+            .Select(o => Path.GetFileNameWithoutExtension(o.Key))
+            .OrderBy(name => name)
+            .ToList();
+    }
+
     private static string EscapeCsvField(string field)
     {
         if (field.Contains(',') || field.Contains('\n') || field.Contains('"'))

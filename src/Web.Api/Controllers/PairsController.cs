@@ -23,6 +23,13 @@ public partial class PairsController : ControllerBase
         return Ok();
     }
 
+    [HttpGet("buckets")]
+    public async Task<IActionResult> ListBuckets()
+    {
+        var buckets = await _pairsRepository.ListBucketsAsync();
+        return Ok(buckets);
+    }
+
     [HttpGet("random/{bucketName}")]
     public async Task<IActionResult> GetRandomPair(
         [RegularExpression(@"^[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$")] string bucketName)
