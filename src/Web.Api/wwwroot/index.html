@@ -304,7 +304,8 @@
 
         uploadMenuItem.addEventListener('click', () => {
             closeMenu();
-            // TODO: implement upload
+            const bucket = getBucketName();
+            window.location.href = bucket ? `/upload.html?bucket=${encodeURIComponent(bucket)}` : '/upload.html';
         });
 
         async function fetchRandomPair(retries = 3) {

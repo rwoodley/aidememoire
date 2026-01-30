@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AideMemoire - Upload</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 18px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            display: flex;
+            flex-direction: column;
+            background: #f5f5f5;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+        }
+
+        .back-button {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 8px;
+            color: #007aff;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .bucket-name {
+            font-size: 1rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px;
+        }
+
+        .upload-card {
+            background: white;
+            border-radius: 20px;
+            padding: 32px 24px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .upload-card h2 {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .section-label {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            border: 2px dashed #ccc;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            color: #666;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .file-input-label:hover {
+            border-color: #007aff;
+            background: #f8f9ff;
+        }
+
+        .file-input-label.has-file {
+            border-color: #34c759;
+            background: #f0faf3;
+            color: #333;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            display: none;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 24px 0;
+            color: #999;
+            font-size: 1rem;
+            position: relative;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 40%;
+            height: 1px;
+            background: #ddd;
+        }
+
+        .divider::before { left: 0; }
+        .divider::after { right: 0; }
+
+        .paste-area {
+            width: 100%;
+            min-height: 200px;
+            padding: 16px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .paste-area:focus {
+            border-color: #007aff;
+        }
+
+        .paste-area::placeholder {
+            color: #aaa;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            padding: 16px;
+            width: 100%;
+        }
+
+        .upload-button {
+            width: 100%;
+            max-width: 600px;
+            padding: 24px 48px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: #007aff;
+            color: white;
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .upload-button:hover {
+            background: #0056b3;
+        }
+
+        .upload-button:active {
+            transform: scale(0.98);
+        }
+
+        .upload-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 1rem;
+            min-height: 1.5em;
+        }
+
+        .status.success { color: #34c759; }
+        .status.error { color: #d32f2f; }
+
+        @media (max-width: 480px) {
+            html {
+                font-size: 16px;
+            }
+
+            .upload-card {
+                padding: 24px 20px;
+                border-radius: 16px;
+            }
+
+            .upload-button {
+                padding: 20px 32px;
+                font-size: 1.25rem;
+                border-radius: 12px;
+            }
+        }
+
+        @media (min-width: 768px) {
+            html {
+                font-size: 20px;
+            }
+
+            .upload-card {
+                padding: 48px 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <button class="back-button" id="backButton">&#8592; Back</button>
+        <span class="bucket-name" id="bucketLabel"></span>
+    </div>
+
+    <div class="container">
+        <div class="upload-card">
+            <h2>Upload CSV</h2>
+
+            <label class="section-label">Choose a file</label>
+            <div class="file-input-wrapper">
+                <label class="file-input-label" id="fileLabel">
+                    Tap to select a CSV file
+                    <input type="file" id="fileInput" accept=".csv,text/csv">
+                </label>
+            </div>
+
+            <div class="divider">or</div>
+
+            <label class="section-label" for="pasteArea">Paste CSV data</label>
+            <textarea class="paste-area" id="pasteArea" placeholder="prompt,response&#10;What is 2+2?,4&#10;Hello,Bonjour"></textarea>
+
+            <div class="status" id="status"></div>
+        </div>
+    </div>
+
+    <div class="button-container">
+        <button class="upload-button" id="uploadButton">Upload</button>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const fileLabel = document.getElementById('fileLabel');
+        const pasteArea = document.getElementById('pasteArea');
+        const uploadButton = document.getElementById('uploadButton');
+        const backButton = document.getElementById('backButton');
+        const bucketLabel = document.getElementById('bucketLabel');
+        const statusEl = document.getElementById('status');
+
+        function getBucketName() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('bucket');
+        }
+
+        bucketLabel.textContent = getBucketName() || '';
+
+        backButton.addEventListener('click', () => {
+            const bucket = getBucketName();
+            window.location.href = bucket ? `/?bucket=${encodeURIComponent(bucket)}` : '/';
+        });
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                fileLabel.textContent = fileInput.files[0].name;
+                fileLabel.classList.add('has-file');
+                pasteArea.value = '';
+            }
+        });
+
+        pasteArea.addEventListener('input', () => {
+            if (pasteArea.value.trim()) {
+                fileInput.value = '';
+                fileLabel.textContent = 'Tap to select a CSV file';
+                fileLabel.classList.remove('has-file');
+            }
+        });
+
+        uploadButton.addEventListener('click', async () => {
+            const bucket = getBucketName();
+            if (!bucket) {
+                showStatus('No bucket specified in URL.', 'error');
+                return;
+            }
+
+            const hasFile = fileInput.files.length > 0;
+            const hasPaste = pasteArea.value.trim().length > 0;
+
+            if (!hasFile && !hasPaste) {
+                showStatus('Select a file or paste CSV data.', 'error');
+                return;
+            }
+
+            uploadButton.disabled = true;
+            showStatus('Uploading...', '');
+
+            try {
+                const formData = new FormData();
+                formData.append('bucketName', bucket);
+
+                if (hasFile) {
+                    formData.append('file', fileInput.files[0]);
+                } else {
+                    const blob = new Blob([pasteArea.value.trim()], { type: 'text/csv' });
+                    formData.append('file', blob, 'paste.csv');
+                }
+
+                const response = await fetch('/api/pairs/bulk', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    showStatus('Upload successful!', 'success');
+                    fileInput.value = '';
+                    fileLabel.textContent = 'Tap to select a CSV file';
+                    fileLabel.classList.remove('has-file');
+                    pasteArea.value = '';
+                } else {
+                    const text = await response.text();
+                    showStatus(text || 'Upload failed.', 'error');
+                }
+            } catch (error) {
+                showStatus('Network error. Please try again.', 'error');
+            }
+
+            uploadButton.disabled = false;
+        });
+
+        function showStatus(message, type) {
+            statusEl.textContent = message;
+            statusEl.className = 'status' + (type ? ' ' + type : '');
+        }
+    </script>
+</body>
+</html>
