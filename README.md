@@ -2,6 +2,7 @@
 
 Simple .Net 9 memorization app. 
 
+See all [Architecture.md](Architecture.md)
 
 ## To Deploy
 
