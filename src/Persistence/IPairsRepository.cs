@@ -7,6 +7,7 @@ public interface IPairsRepository
     Task<Pair?> GetRandomPairAsync(string bucketName);
     Task<List<Pair>> GetAllPairsAsync(string bucketName);
     Task<List<string>> ListBucketsAsync();
+    Task DeletePairAsync(string bucketName, string prompt);
     Task DeleteBucketAsync(string bucketName);
     Task RenameBucketAsync(string oldName, string newName);
     Task<string?> GetDefaultBucketAsync();

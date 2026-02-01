@@ -208,13 +208,34 @@
         }
 
         .pair-table .col-prompt {
-            width: 50%;
             padding-right: 12px;
         }
 
         .pair-table .col-response {
-            width: 50%;
             padding-left: 12px;
+        }
+
+        .pair-table .col-actions {
+            width: 40px;
+            text-align: center;
+            padding-left: 8px;
+        }
+
+        .btn-delete-pair {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 6px;
+            color: #ff453a;
+            font-size: 1.1rem;
+            line-height: 1;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.2s;
+        }
+
+        .btn-delete-pair:hover {
+            background: #3a2020;
         }
 
         .pair-count {
@@ -410,7 +431,7 @@
                 table.className = 'pair-table';
 
                 const thead = document.createElement('thead');
-                thead.innerHTML = '<tr><th class="col-prompt">Prompt</th><th class="col-response">Response</th></tr>';
+                thead.innerHTML = '<tr><th class="col-prompt">Prompt</th><th class="col-response">Response</th><th class="col-actions"></th></tr>';
                 table.appendChild(thead);
 
                 const tbody = document.createElement('tbody');
@@ -425,8 +446,19 @@
                     tdResponse.className = 'col-response';
                     tdResponse.textContent = pair.response;
 
+                    const tdActions = document.createElement('td');
+                    tdActions.className = 'col-actions';
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'btn-delete-pair';
+                    deleteBtn.innerHTML = '&#128465;';
+                    deleteBtn.title = 'Delete pair';
+                    deleteBtn.addEventListener('click', () => deletePair(pair.prompt, tr));
+                    tdActions.appendChild(deleteBtn);
+
                     tr.appendChild(tdPrompt);
                     tr.appendChild(tdResponse);
+                    tr.appendChild(tdActions);
                     tbody.appendChild(tr);
                 });
 
@@ -438,6 +470,27 @@
             } catch {
                 pairsContainer.innerHTML = '<div class="empty-state" style="color:#ff453a">Failed to load pairs.</div>';
             }
+        }
+
+        async function deletePair(prompt, rowElement) {
+            try {
+                const response = await fetch(`/api/pairs/buckets/${encodeURIComponent(bucketName)}/pairs`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+
+                if (response.ok) {
+                    rowElement.remove();
+                    const countDiv = pairsContainer.querySelector('.pair-count');
+                    const remaining = pairsContainer.querySelectorAll('tbody tr').length;
+                    if (remaining === 0) {
+                        pairsContainer.innerHTML = '<div class="empty-state">This list is empty.</div>';
+                    } else if (countDiv) {
+                        countDiv.textContent = `${remaining} pair${remaining !== 1 ? 's' : ''}`;
+                    }
+                }
+            } catch {}
         }
 
         loadPairs();

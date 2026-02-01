@@ -50,6 +50,15 @@ public partial class PairsController : ControllerBase
         return Ok(pairs.Select(p => new { p.Prompt, p.Response }));
     }
 
+    [HttpDelete("buckets/{bucketName}/pairs")]
+    public async Task<IActionResult> DeletePair(
+        [RegularExpression(@"^[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$")] string bucketName,
+        [FromBody] DeletePairRequest request)
+    {
+        await _pairsRepository.DeletePairAsync(bucketName, request.Prompt);
+        return Ok();
+    }
+
     [HttpDelete("buckets/{bucketName}")]
     public async Task<IActionResult> DeleteBucket(
         [RegularExpression(@"^[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$")] string bucketName)

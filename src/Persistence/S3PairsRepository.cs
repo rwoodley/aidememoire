@@ -145,6 +145,29 @@ public class S3PairsRepository : IPairsRepository
         return pairs;
     }
 
+    public async Task DeletePairAsync(string bucketName, string prompt)
+    {
+        var objectKey = $"1111/{bucketName}.csv";
+        var content = await GetExistingContentAsync(objectKey);
+
+        if (string.IsNullOrEmpty(content))
+            return;
+
+        var lines = ParseCsvLines(content)
+            .Where(line =>
+            {
+                if (string.IsNullOrWhiteSpace(line))
+                    return false;
+
+                var columns = ParseCsvColumns(line);
+                return columns.Count >= 2 && columns[0] != prompt;
+            })
+            .ToList();
+
+        var updatedContent = string.Join(Environment.NewLine, lines);
+        await UploadContentAsync(objectKey, updatedContent);
+    }
+
     public async Task<List<string>> ListBucketsAsync()
     {
         var request = new ListObjectsV2Request
