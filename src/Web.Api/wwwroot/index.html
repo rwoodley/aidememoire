@@ -252,6 +252,90 @@
             transform: none;
         }
 
+        .delete-pair-button {
+            width: 100%;
+            max-width: 600px;
+            padding: 14px 48px;
+            font-size: 1rem;
+            font-weight: 600;
+            background: none;
+            color: #ff453a;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.2s;
+        }
+
+        .delete-pair-button:hover {
+            background: #2a1a1a;
+        }
+
+        .delete-pair-button:disabled {
+            color: #555;
+            cursor: not-allowed;
+            background: none;
+        }
+
+        .confirm-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 50;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .confirm-overlay.open {
+            display: flex;
+        }
+
+        .confirm-dialog {
+            background: #2a2a2a;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+            width: calc(100% - 32px);
+            text-align: center;
+        }
+
+        .confirm-dialog p {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            color: #e0e0e0;
+        }
+
+        .confirm-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .btn-confirm-cancel, .btn-confirm-delete {
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            flex: 1;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-confirm-cancel {
+            background: #383838;
+            color: #e0e0e0;
+        }
+
+        .btn-confirm-delete {
+            background: #ff453a;
+            color: white;
+        }
+
         .error {
             color: #ff453a;
         }
@@ -319,6 +403,19 @@
     <div class="button-container">
         <button class="next-button" id="nextButton">Next</button>
     </div>
+    <div class="button-container" style="padding-top: 0;">
+        <button class="delete-pair-button" id="deletePairButton" disabled>&#128465; Delete This Pair</button>
+    </div>
+
+    <div class="confirm-overlay" id="confirmOverlay">
+        <div class="confirm-dialog">
+            <p id="confirmMessage">Are you sure you want to delete this pair?</p>
+            <div class="confirm-buttons">
+                <button class="btn-confirm-cancel" id="confirmCancel">Cancel</button>
+                <button class="btn-confirm-delete" id="confirmDelete">Delete</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         const promptEl = document.getElementById('prompt');
@@ -333,6 +430,11 @@
         const bucketText = document.getElementById('bucketText');
         const bucketDropdown = document.getElementById('bucketDropdown');
         const uploadMenuItem = document.getElementById('uploadMenuItem');
+        const deletePairButton = document.getElementById('deletePairButton');
+        const confirmOverlay = document.getElementById('confirmOverlay');
+        const confirmMessage = document.getElementById('confirmMessage');
+        const confirmCancel = document.getElementById('confirmCancel');
+        const confirmDeleteBtn = document.getElementById('confirmDelete');
 
         let currentPrompt = null;
         let responseRevealed = false;
@@ -483,6 +585,7 @@
             hintEl.classList.remove('hidden');
             responseRevealed = false;
             nextButton.disabled = true;
+            deletePairButton.disabled = true;
 
             try {
                 const pair = await fetchRandomPair();
@@ -490,7 +593,9 @@
                 promptEl.textContent = pair.prompt;
                 responseEl.textContent = pair.response;
                 nextButton.disabled = false;
+                deletePairButton.disabled = false;
             } catch (error) {
+                currentPrompt = null;
                 promptEl.textContent = error.message;
                 promptEl.classList.add('error');
                 hintEl.classList.add('hidden');
@@ -498,19 +603,56 @@
             }
         }
 
-        function revealResponse() {
-            if (!responseRevealed && responseEl.textContent) {
+        function handleContainerClick() {
+            if (responseRevealed) {
+                loadNewPair();
+            } else if (responseEl.textContent) {
                 responseEl.classList.add('visible');
                 hintEl.classList.add('hidden');
                 responseRevealed = true;
             }
         }
 
-        containerEl.addEventListener('click', revealResponse);
+        containerEl.addEventListener('click', handleContainerClick);
 
         nextButton.addEventListener('click', (e) => {
             e.stopPropagation();
             loadNewPair();
+        });
+
+        // Delete pair
+        deletePairButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!currentPrompt || !activeBucket) return;
+            confirmMessage.textContent = `Delete "${currentPrompt}"?`;
+            confirmOverlay.classList.add('open');
+        });
+
+        confirmCancel.addEventListener('click', () => {
+            confirmOverlay.classList.remove('open');
+        });
+
+        confirmOverlay.addEventListener('click', (e) => {
+            if (e.target === confirmOverlay) {
+                confirmOverlay.classList.remove('open');
+            }
+        });
+
+        confirmDeleteBtn.addEventListener('click', async () => {
+            confirmOverlay.classList.remove('open');
+            if (!currentPrompt || !activeBucket) return;
+
+            try {
+                const response = await fetch(`/api/pairs/buckets/${encodeURIComponent(activeBucket)}/pairs`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: currentPrompt })
+                });
+
+                if (response.ok) {
+                    loadNewPair();
+                }
+            } catch {}
         });
 
         (async () => {
