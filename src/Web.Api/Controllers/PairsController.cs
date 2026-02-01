@@ -23,6 +23,13 @@ public partial class PairsController : ControllerBase
         return Ok();
     }
 
+    [HttpPost("buckets")]
+    public async Task<IActionResult> CreateBucket([FromBody] CreateBucketRequest request)
+    {
+        await _pairsRepository.CreateBucketAsync(request.BucketName);
+        return Ok();
+    }
+
     [HttpGet("buckets")]
     public async Task<IActionResult> ListBuckets()
     {

@@ -395,11 +395,16 @@
                 const newItem = document.createElement('button');
                 newItem.className = 'bucket-dropdown-item new-bucket';
                 newItem.textContent = '+ New Bucket';
-                newItem.addEventListener('click', (e) => {
+                newItem.addEventListener('click', async (e) => {
                     e.stopPropagation();
                     bucketDropdown.classList.remove('open');
                     const name = prompt('Enter new bucket name:');
                     if (name && name.trim()) {
+                        await fetch('/api/pairs/buckets', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ bucketName: name.trim() })
+                        });
                         switchBucket(name.trim());
                     }
                 });

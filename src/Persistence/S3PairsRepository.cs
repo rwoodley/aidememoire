@@ -168,6 +168,16 @@ public class S3PairsRepository : IPairsRepository
         await UploadContentAsync(objectKey, updatedContent);
     }
 
+    public async Task CreateBucketAsync(string bucketName)
+    {
+        var objectKey = $"1111/{bucketName}.csv";
+        var existing = await GetExistingContentAsync(objectKey);
+        if (!string.IsNullOrEmpty(existing))
+            return;
+
+        await UploadContentAsync(objectKey, string.Empty);
+    }
+
     public async Task<List<string>> ListBucketsAsync()
     {
         var request = new ListObjectsV2Request

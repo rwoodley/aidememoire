@@ -6,6 +6,7 @@ public interface IPairsRepository
     Task AppendCsvContentAsync(string bucketName, string csvContent);
     Task<Pair?> GetRandomPairAsync(string bucketName);
     Task<List<Pair>> GetAllPairsAsync(string bucketName);
+    Task CreateBucketAsync(string bucketName);
     Task<List<string>> ListBucketsAsync();
     Task DeletePairAsync(string bucketName, string prompt);
     Task DeleteBucketAsync(string bucketName);
