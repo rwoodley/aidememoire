@@ -42,6 +42,14 @@ public partial class PairsController : ControllerBase
         return Ok(new { pair.Prompt, pair.Response });
     }
 
+    [HttpGet("buckets/{bucketName}")]
+    public async Task<IActionResult> GetAllPairs(
+        [RegularExpression(@"^[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$")] string bucketName)
+    {
+        var pairs = await _pairsRepository.GetAllPairsAsync(bucketName);
+        return Ok(pairs.Select(p => new { p.Prompt, p.Response }));
+    }
+
     [HttpDelete("buckets/{bucketName}")]
     public async Task<IActionResult> DeleteBucket(
         [RegularExpression(@"^[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$")] string bucketName)

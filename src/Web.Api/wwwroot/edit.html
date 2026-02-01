@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AideMemoire</title>
+    <title>AideMemoire - Edit List</title>
     <style>
         * {
             box-sizing: border-box;
@@ -97,11 +97,6 @@
             font-weight: 600;
         }
 
-        .bucket-dropdown-item.new-bucket {
-            border-top: 1px solid #383838;
-            color: #0a84ff;
-        }
-
         .menu-overlay {
             display: none;
             position: fixed;
@@ -164,96 +159,83 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
             padding: 16px;
-            cursor: pointer;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
         }
 
-        .card {
+        .edit-card {
             background: #1e1e1e;
             border-radius: 20px;
             padding: 32px 24px;
             max-width: 600px;
             width: 100%;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .edit-card h2 {
+            font-size: 1.5rem;
+            color: #f0f0f0;
+            margin-bottom: 24px;
             text-align: center;
         }
 
-        .prompt {
-            font-size: 2rem;
+        .pair-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .pair-table th {
+            text-align: left;
+            font-size: 0.85rem;
+            color: #888;
             font-weight: 600;
-            color: #f0f0f0;
-            margin-bottom: 24px;
-            line-height: 1.3;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 8px 0;
+            border-bottom: 1px solid #383838;
         }
 
-        .response {
-            font-size: 1.75rem;
-            color: #aaa;
-            padding-top: 24px;
-            border-top: 2px solid #383838;
-            visibility: hidden;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            line-height: 1.3;
-        }
-
-        .response.visible {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        .hint {
-            color: #777;
+        .pair-table td {
+            padding: 12px 0;
+            border-bottom: 1px solid #2a2a2a;
             font-size: 1rem;
-            margin-top: 24px;
+            color: #e0e0e0;
+            vertical-align: top;
         }
 
-        .hint.hidden {
-            display: none;
+        .pair-table tr:last-child td {
+            border-bottom: none;
         }
 
-        .button-container {
-            display: flex;
-            justify-content: center;
-            padding: 16px;
-            width: 100%;
+        .pair-table .col-prompt {
+            width: 50%;
+            padding-right: 12px;
         }
 
-        .next-button {
-            width: 100%;
-            max-width: 600px;
-            padding: 24px 48px;
-            font-size: 1.5rem;
-            font-weight: 600;
-            background: #0a84ff;
-            color: white;
-            border: none;
-            border-radius: 16px;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
-            -webkit-tap-highlight-color: transparent;
+        .pair-table .col-response {
+            width: 50%;
+            padding-left: 12px;
         }
 
-        .next-button:hover {
-            background: #0070e0;
+        .pair-count {
+            text-align: center;
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
         }
 
-        .next-button:active {
-            transform: scale(0.98);
+        .empty-state {
+            text-align: center;
+            color: #777;
+            font-size: 1.1rem;
+            padding: 32px 0;
         }
 
-        .next-button:disabled {
-            background: #444;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .error {
-            color: #ff453a;
+        .loading-state {
+            text-align: center;
+            color: #777;
+            font-size: 1.1rem;
+            padding: 32px 0;
         }
 
         @media (max-width: 480px) {
@@ -261,23 +243,9 @@
                 font-size: 16px;
             }
 
-            .card {
+            .edit-card {
                 padding: 24px 20px;
                 border-radius: 16px;
-            }
-
-            .prompt {
-                font-size: 1.75rem;
-            }
-
-            .response {
-                font-size: 1.5rem;
-            }
-
-            .next-button {
-                padding: 20px 32px;
-                font-size: 1.25rem;
-                border-radius: 12px;
             }
         }
 
@@ -286,7 +254,7 @@
                 font-size: 20px;
             }
 
-            .card {
+            .edit-card {
                 padding: 48px 40px;
             }
         }
@@ -296,7 +264,7 @@
     <div class="top-bar">
         <button class="hamburger" id="menuButton">&#9776;</button>
         <span class="bucket-name" id="bucketLabel">
-            <span id="bucketText"></span> &#9662;
+            <span id="bucketText">Select List</span> &#9662;
             <div class="bucket-dropdown" id="bucketDropdown"></div>
         </span>
     </div>
@@ -304,39 +272,32 @@
     <div class="menu-overlay" id="menuOverlay"></div>
     <nav class="menu" id="menu">
         <div class="menu-header">AideMemoire</div>
+        <button class="menu-item" id="drillMenuItem">Drill</button>
         <button class="menu-item" id="uploadMenuItem">Upload List</button>
-        <button class="menu-item" id="editMenuItem">Edit List</button>
         <button class="menu-item" id="manageMenuItem">Manage Lists</button>
     </nav>
 
-    <div class="container" id="container">
-        <div class="card">
-            <div class="prompt" id="prompt">Loading...</div>
-            <div class="response" id="response"></div>
-            <div class="hint" id="hint">Tap anywhere to reveal answer</div>
+    <div class="container">
+        <div class="edit-card">
+            <h2 id="heading">Edit List</h2>
+            <div id="pairsContainer">
+                <div class="loading-state">Loading...</div>
+            </div>
         </div>
-    </div>
-    <div class="button-container">
-        <button class="next-button" id="nextButton">Next</button>
     </div>
 
     <script>
-        const promptEl = document.getElementById('prompt');
-        const responseEl = document.getElementById('response');
-        const hintEl = document.getElementById('hint');
-        const containerEl = document.getElementById('container');
-        const nextButton = document.getElementById('nextButton');
         const menuButton = document.getElementById('menuButton');
         const menu = document.getElementById('menu');
         const menuOverlay = document.getElementById('menuOverlay');
+        const drillMenuItem = document.getElementById('drillMenuItem');
+        const uploadMenuItem = document.getElementById('uploadMenuItem');
+        const manageMenuItem = document.getElementById('manageMenuItem');
+        const pairsContainer = document.getElementById('pairsContainer');
+        const heading = document.getElementById('heading');
         const bucketLabel = document.getElementById('bucketLabel');
         const bucketText = document.getElementById('bucketText');
         const bucketDropdown = document.getElementById('bucketDropdown');
-        const uploadMenuItem = document.getElementById('uploadMenuItem');
-
-        let currentPrompt = null;
-        let responseRevealed = false;
-        let activeBucket = null;
 
         function getBucketName() {
             const params = new URLSearchParams(window.location.search);
@@ -344,25 +305,11 @@
         }
 
         function switchBucket(name) {
-            window.location.href = `/?bucket=${encodeURIComponent(name)}`;
+            window.location.href = `/edit.html?bucket=${encodeURIComponent(name)}`;
         }
 
-        async function resolveActiveBucket() {
-            const fromUrl = getBucketName();
-            if (fromUrl) return fromUrl;
-
-            try {
-                const res = await fetch('/api/pairs/default');
-                if (res.ok) {
-                    const data = await res.json();
-                    return data.bucketName;
-                }
-            } catch {}
-            return null;
-        }
-
-        // Set bucket name in top bar (updated after init)
-        bucketText.textContent = getBucketName() || 'Loading...';
+        const bucketName = getBucketName();
+        bucketText.textContent = bucketName || 'Select List';
 
         // Bucket dropdown
         bucketLabel.addEventListener('click', async (e) => {
@@ -391,19 +338,6 @@
                     });
                     bucketDropdown.appendChild(item);
                 });
-
-                const newItem = document.createElement('button');
-                newItem.className = 'bucket-dropdown-item new-bucket';
-                newItem.textContent = '+ New Bucket';
-                newItem.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    bucketDropdown.classList.remove('open');
-                    const name = prompt('Enter new bucket name:');
-                    if (name && name.trim()) {
-                        switchBucket(name.trim());
-                    }
-                });
-                bucketDropdown.appendChild(newItem);
             } catch {
                 bucketDropdown.innerHTML = '<div class="bucket-dropdown-item" style="color:#d32f2f">Failed to load</div>';
             }
@@ -431,88 +365,82 @@
 
         menuOverlay.addEventListener('click', closeMenu);
 
+        drillMenuItem.addEventListener('click', () => {
+            closeMenu();
+            window.location.href = bucketName ? `/?bucket=${encodeURIComponent(bucketName)}` : '/';
+        });
+
         uploadMenuItem.addEventListener('click', () => {
             closeMenu();
-            window.location.href = activeBucket ? `/upload.html?bucket=${encodeURIComponent(activeBucket)}` : '/upload.html';
+            window.location.href = bucketName ? `/upload.html?bucket=${encodeURIComponent(bucketName)}` : '/upload.html';
         });
 
-        document.getElementById('editMenuItem').addEventListener('click', () => {
-            closeMenu();
-            window.location.href = activeBucket ? `/edit.html?bucket=${encodeURIComponent(activeBucket)}` : '/edit.html';
-        });
-
-        document.getElementById('manageMenuItem').addEventListener('click', () => {
+        manageMenuItem.addEventListener('click', () => {
             closeMenu();
             window.location.href = '/manage.html';
         });
 
-        async function fetchRandomPair(retries = 3) {
-            const bucket = activeBucket;
-            if (!bucket) {
-                throw new Error('No list specified. Select a list or set a default in Manage Lists.');
+        async function loadPairs() {
+            if (!bucketName) {
+                pairsContainer.innerHTML = '<div class="empty-state">No list specified.</div>';
+                return;
             }
 
-            for (let i = 0; i < retries; i++) {
-                const response = await fetch(`/api/pairs/random/${encodeURIComponent(bucket)}`);
-
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        throw new Error('Bucket not found or empty.');
-                    }
-                    throw new Error('Failed to fetch pair.');
-                }
-
-                const data = await response.json();
-
-                if (data.prompt !== currentPrompt || i === retries - 1) {
-                    return data;
-                }
-            }
-        }
-
-        async function loadNewPair() {
-            promptEl.textContent = 'Loading...';
-            promptEl.classList.remove('error');
-            responseEl.textContent = '';
-            responseEl.classList.remove('visible');
-            hintEl.classList.remove('hidden');
-            responseRevealed = false;
-            nextButton.disabled = true;
+            heading.textContent = bucketName;
 
             try {
-                const pair = await fetchRandomPair();
-                currentPrompt = pair.prompt;
-                promptEl.textContent = pair.prompt;
-                responseEl.textContent = pair.response;
-                nextButton.disabled = false;
-            } catch (error) {
-                promptEl.textContent = error.message;
-                promptEl.classList.add('error');
-                hintEl.classList.add('hidden');
-                nextButton.disabled = false;
+                const response = await fetch(`/api/pairs/buckets/${encodeURIComponent(bucketName)}`);
+                if (!response.ok) {
+                    pairsContainer.innerHTML = '<div class="empty-state" style="color:#ff453a">Failed to load pairs.</div>';
+                    return;
+                }
+
+                const pairs = await response.json();
+
+                if (pairs.length === 0) {
+                    pairsContainer.innerHTML = '<div class="empty-state">This list is empty.</div>';
+                    return;
+                }
+
+                const countDiv = document.createElement('div');
+                countDiv.className = 'pair-count';
+                countDiv.textContent = `${pairs.length} pair${pairs.length !== 1 ? 's' : ''}`;
+
+                const table = document.createElement('table');
+                table.className = 'pair-table';
+
+                const thead = document.createElement('thead');
+                thead.innerHTML = '<tr><th class="col-prompt">Prompt</th><th class="col-response">Response</th></tr>';
+                table.appendChild(thead);
+
+                const tbody = document.createElement('tbody');
+                pairs.forEach(pair => {
+                    const tr = document.createElement('tr');
+
+                    const tdPrompt = document.createElement('td');
+                    tdPrompt.className = 'col-prompt';
+                    tdPrompt.textContent = pair.prompt;
+
+                    const tdResponse = document.createElement('td');
+                    tdResponse.className = 'col-response';
+                    tdResponse.textContent = pair.response;
+
+                    tr.appendChild(tdPrompt);
+                    tr.appendChild(tdResponse);
+                    tbody.appendChild(tr);
+                });
+
+                table.appendChild(tbody);
+
+                pairsContainer.innerHTML = '';
+                pairsContainer.appendChild(countDiv);
+                pairsContainer.appendChild(table);
+            } catch {
+                pairsContainer.innerHTML = '<div class="empty-state" style="color:#ff453a">Failed to load pairs.</div>';
             }
         }
 
-        function revealResponse() {
-            if (!responseRevealed && responseEl.textContent) {
-                responseEl.classList.add('visible');
-                hintEl.classList.add('hidden');
-                responseRevealed = true;
-            }
-        }
-
-        containerEl.addEventListener('click', revealResponse);
-
-        nextButton.addEventListener('click', (e) => {
-            e.stopPropagation();
-            loadNewPair();
-        });
-
-        (async () => {
-            activeBucket = await resolveActiveBucket();
-            bucketText.textContent = activeBucket || 'Select List';
-            loadNewPair();
-        })();
+        loadPairs();
     </script>
 </body>
 </html>

@@ -121,6 +121,30 @@ public class S3PairsRepository : IPairsRepository
         return new Pair(columns[0], columns[1]);
     }
 
+    public async Task<List<Pair>> GetAllPairsAsync(string bucketName)
+    {
+        var objectKey = $"1111/{bucketName}.csv";
+        var content = await GetExistingContentAsync(objectKey);
+
+        if (string.IsNullOrEmpty(content))
+            return new List<Pair>();
+
+        var pairs = new List<Pair>();
+        foreach (var line in ParseCsvLines(content))
+        {
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            var columns = ParseCsvColumns(line);
+            if (columns.Count < 2)
+                continue;
+
+            pairs.Add(new Pair(columns[0], columns[1]));
+        }
+
+        return pairs;
+    }
+
     public async Task<List<string>> ListBucketsAsync()
     {
         var request = new ListObjectsV2Request

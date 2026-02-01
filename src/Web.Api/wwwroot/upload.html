@@ -356,6 +356,7 @@
     <nav class="menu" id="menu">
         <div class="menu-header">AideMemoire</div>
         <button class="menu-item" id="drillMenuItem">Drill</button>
+        <button class="menu-item" id="editMenuItem">Edit List</button>
         <button class="menu-item" id="manageMenuItem">Manage Lists</button>
     </nav>
 
@@ -488,6 +489,12 @@
             closeMenu();
             const bucket = getBucketName();
             window.location.href = bucket ? `/?bucket=${encodeURIComponent(bucket)}` : '/';
+        });
+
+        document.getElementById('editMenuItem').addEventListener('click', () => {
+            closeMenu();
+            const bucket = getBucketName();
+            window.location.href = bucket ? `/edit.html?bucket=${encodeURIComponent(bucket)}` : '/edit.html';
         });
 
         document.getElementById('manageMenuItem').addEventListener('click', () => {

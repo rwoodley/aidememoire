@@ -192,7 +192,7 @@
             gap: 8px;
         }
 
-        .btn-rename, .btn-delete {
+        .btn-edit, .btn-rename, .btn-delete {
             padding: 10px 16px;
             font-size: 0.9rem;
             font-weight: 600;
@@ -201,6 +201,15 @@
             cursor: pointer;
             -webkit-tap-highlight-color: transparent;
             transition: background 0.2s, transform 0.1s;
+        }
+
+        .btn-edit {
+            background: #2a2a2a;
+            color: #30d158;
+        }
+
+        .btn-edit:hover {
+            background: #383838;
         }
 
         .btn-rename {
@@ -341,6 +350,7 @@
         <div class="menu-header">AideMemoire</div>
         <button class="menu-item" id="drillMenuItem">Drill</button>
         <button class="menu-item" id="uploadMenuItem">Upload List</button>
+        <button class="menu-item" id="editMenuItem">Edit List</button>
     </nav>
 
     <div class="confirm-overlay" id="confirmOverlay">
@@ -406,6 +416,11 @@
             window.location.href = '/upload.html';
         });
 
+        document.getElementById('editMenuItem').addEventListener('click', () => {
+            closeMenu();
+            window.location.href = '/edit.html';
+        });
+
         function showStatus(message, type) {
             statusEl.textContent = message;
             statusEl.className = 'status' + (type ? ' ' + type : '');
@@ -455,6 +470,13 @@
                     const actions = document.createElement('div');
                     actions.className = 'bucket-actions';
 
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'btn-edit';
+                    editBtn.textContent = 'Edit';
+                    editBtn.addEventListener('click', () => {
+                        window.location.href = `/edit.html?bucket=${encodeURIComponent(name)}`;
+                    });
+
                     const renameBtn = document.createElement('button');
                     renameBtn.className = 'btn-rename';
                     renameBtn.textContent = 'Rename';
@@ -465,6 +487,7 @@
                     deleteBtn.textContent = 'Delete';
                     deleteBtn.addEventListener('click', () => confirmDelete(name));
 
+                    actions.appendChild(editBtn);
                     actions.appendChild(renameBtn);
                     actions.appendChild(deleteBtn);
                     item.appendChild(left);
