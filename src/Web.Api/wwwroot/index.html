@@ -13,12 +13,12 @@
 
         html {
             font-size: 18px;
+            height: 100%;
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            min-height: 100vh;
-            min-height: -webkit-fill-available;
+            min-height: 100%;
             display: flex;
             flex-direction: column;
             background: #121212;
@@ -161,7 +161,6 @@
         }
 
         .container {
-            flex: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -216,17 +215,23 @@
             display: none;
         }
 
-        .button-container {
+        .next-button-container {
+            flex: 1;
             display: flex;
             justify-content: center;
             padding: 16px;
             width: 100%;
         }
 
-        .next-button {
+        .next-button-wrapper {
             width: 100%;
             max-width: 600px;
-            padding: 24px 48px;
+        }
+
+        .next-button {
+            width: 100%;
+            height: 100%;
+            min-height: 60px;
             font-size: 1.5rem;
             font-weight: 600;
             background: #0a84ff;
@@ -250,6 +255,13 @@
             background: #444;
             cursor: not-allowed;
             transform: none;
+        }
+
+        .delete-button-container {
+            display: flex;
+            justify-content: center;
+            padding: 12px 16px;
+            width: 100%;
         }
 
         .delete-pair-button {
@@ -359,7 +371,6 @@
             }
 
             .next-button {
-                padding: 20px 32px;
                 font-size: 1.25rem;
                 border-radius: 12px;
             }
@@ -400,10 +411,12 @@
             <div class="hint" id="hint">Tap anywhere to reveal answer</div>
         </div>
     </div>
-    <div class="button-container">
-        <button class="next-button" id="nextButton">Next</button>
+    <div class="next-button-container">
+        <div class="next-button-wrapper">
+            <button class="next-button" id="nextButton">Next</button>
+        </div>
     </div>
-    <div class="button-container" style="padding-top: 0;">
+    <div class="delete-button-container">
         <button class="delete-pair-button" id="deletePairButton" disabled>&#128465; Delete This Pair</button>
     </div>
 
