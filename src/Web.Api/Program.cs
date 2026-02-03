@@ -1,3 +1,4 @@
+using Amazon.Polly;
 using Amazon.S3;
 using Persistence;
 
@@ -7,6 +8,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddAWSService<IAmazonS3>();
+builder.Services.AddAWSService<IAmazonPolly>();
+builder.Services.AddSingleton<AudioGenerationService>();
 builder.Services.AddScoped<IPairsRepository, S3PairsRepository>();
 
 var app = builder.Build();

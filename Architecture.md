@@ -39,3 +39,5 @@
   - Pushing to `main` triggers a GitHub Actions workflow                                                                                         
   - The workflow builds the Docker image and pushes it to **Amazon ECR**                                                                         
   - **App Runner** detects the new image and automatically redeploys                        
+
+

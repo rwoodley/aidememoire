@@ -8,10 +8,12 @@ public class S3PairsRepository : IPairsRepository
     private const string S3BucketName = "aidememoire108";
 
     private readonly IAmazonS3 _s3Client;
+    private readonly AudioGenerationService _audioGenerationService;
 
-    public S3PairsRepository(IAmazonS3 s3Client)
+    public S3PairsRepository(IAmazonS3 s3Client, AudioGenerationService audioGenerationService)
     {
         _s3Client = s3Client;
+        _audioGenerationService = audioGenerationService;
     }
 
     public async Task AddPairAsync(string bucketName, string prompt, string response)
@@ -29,13 +31,14 @@ public class S3PairsRepository : IPairsRepository
         else
         {
             audioId = Guid.NewGuid().ToString();
-            await CreateEmptyAudioFileAsync(bucketName, audioId);
         }
 
         existingPairs[prompt] = (Response: response, AudioId: audioId);
 
         var updatedContent = BuildCsvContent(existingPairs);
         await UploadContentAsync(objectKey, updatedContent);
+
+        await _audioGenerationService.GenerateAudioAsync(bucketName, new List<(string, string)> { (audioId, response) });
     }
 
     private async Task<string> GetExistingContentAsync(string objectKey)
@@ -77,6 +80,7 @@ public class S3PairsRepository : IPairsRepository
         var existingContent = await GetExistingContentAsync(objectKey);
 
         var pairs = ParsePairsWithAudioIds(existingContent);
+        var audioItems = new List<(string AudioId, string Text)>();
 
         foreach (var line in ParseCsvLines(csvContent))
         {
@@ -93,17 +97,23 @@ public class S3PairsRepository : IPairsRepository
             if (pairs.TryGetValue(prompt, out var existing))
             {
                 pairs[prompt] = (Response: response, AudioId: existing.AudioId);
+                audioItems.Add((existing.AudioId, prompt));
             }
             else
             {
                 var audioId = Guid.NewGuid().ToString();
-                await CreateEmptyAudioFileAsync(bucketName, audioId);
                 pairs[prompt] = (Response: response, AudioId: audioId);
+                audioItems.Add((audioId, prompt));
             }
         }
 
         var updatedContent = BuildCsvContent(pairs);
         await UploadContentAsync(objectKey, updatedContent);
+
+        if (audioItems.Count > 0)
+        {
+            await _audioGenerationService.GenerateAudioAsync(bucketName, audioItems);
+        }
     }
 
     public async Task<Pair?> GetRandomPairAsync(string bucketName)
@@ -321,19 +331,6 @@ public class S3PairsRepository : IPairsRepository
             Key = "1111/.default",
             ContentBody = bucketName,
             ContentType = "text/plain"
-        };
-
-        await _s3Client.PutObjectAsync(request);
-    }
-
-    private async Task CreateEmptyAudioFileAsync(string bucketName, string audioId)
-    {
-        var request = new PutObjectRequest
-        {
-            BucketName = S3BucketName,
-            Key = $"1111/{bucketName}/{audioId}.mp3",
-            ContentBody = "",
-            ContentType = "audio/mpeg"
         };
 
         await _s3Client.PutObjectAsync(request);

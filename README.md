@@ -20,9 +20,6 @@ aws ecr get-login-password --region us-east-1 --profile apprunner-deployer | doc
 # Build for x86_64/AMD64 (App Runner's architecture)
 docker build --platform linux/amd64 -t 445753231799.dkr.ecr.us-east-1.amazonaws.com/aidememoire:latest .
 
-# do we need this everytime? green acres doesn't do it
-# docker tag aidememoire:latest 445753231799.dkr.ecr.us-east-1.amazonaws.com/aidememoire:latest
-
 docker push 445753231799.dkr.ecr.us-east-1.amazonaws.com/aidememoire:latest
 ```
 
