@@ -100,6 +100,18 @@ public partial class PairsController : ControllerBase
         return Ok();
     }
 
+    [HttpGet("buckets/{bucketName}/audio/{audioId}")]
+    public async Task<IActionResult> GetAudio(
+        [RegularExpression(@"^[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$")] string bucketName,
+        string audioId)
+    {
+        var stream = await _pairsRepository.GetAudioAsync(bucketName, audioId);
+        if (stream == null)
+            return NotFound();
+
+        return File(stream, "audio/mpeg");
+    }
+
     [HttpPost("bulk")]
     public async Task<IActionResult> BulkUpload([FromForm] BulkUploadRequest request)
     {

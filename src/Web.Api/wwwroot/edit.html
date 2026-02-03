@@ -221,6 +221,19 @@
             padding-left: 8px;
         }
 
+        .btn-speaker {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            color: #0a84ff;
+            font-size: 1rem;
+            line-height: 1;
+            margin-left: 6px;
+            -webkit-tap-highlight-color: transparent;
+            vertical-align: middle;
+        }
+
         .btn-delete-pair {
             background: none;
             border: none;
@@ -441,6 +454,18 @@
                     const tdPrompt = document.createElement('td');
                     tdPrompt.className = 'col-prompt';
                     tdPrompt.textContent = pair.prompt;
+
+                    if (pair.audioId) {
+                        const speakerBtn = document.createElement('button');
+                        speakerBtn.className = 'btn-speaker';
+                        speakerBtn.innerHTML = '&#128264;';
+                        speakerBtn.title = 'Play audio';
+                        speakerBtn.addEventListener('click', () => {
+                            const audio = new Audio(`/api/pairs/buckets/${encodeURIComponent(bucketName)}/audio/${encodeURIComponent(pair.audioId)}`);
+                            audio.play();
+                        });
+                        tdPrompt.appendChild(speakerBtn);
+                    }
 
                     const tdResponse = document.createElement('td');
                     tdResponse.className = 'col-response';

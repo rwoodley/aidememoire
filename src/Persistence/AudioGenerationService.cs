@@ -24,8 +24,8 @@ public class AudioGenerationService
         {
             var result = await _pollyClient.SynthesizeSpeechAsync(new SynthesizeSpeechRequest
             {
-                Engine = Engine.Neural,
-                VoiceId = VoiceId.Vicki,
+                Engine = Engine.Standard,
+                VoiceId = VoiceId.Hans,
                 OutputFormat = OutputFormat.Mp3,
                 Text = text
             });

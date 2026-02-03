@@ -13,4 +13,5 @@ public interface IPairsRepository
     Task RenameBucketAsync(string oldName, string newName);
     Task<string?> GetDefaultBucketAsync();
     Task SetDefaultBucketAsync(string bucketName);
+    Task<Stream?> GetAudioAsync(string bucketName, string audioId);
 }

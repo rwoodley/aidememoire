@@ -336,6 +336,28 @@ public class S3PairsRepository : IPairsRepository
         await _s3Client.PutObjectAsync(request);
     }
 
+    public async Task<Stream?> GetAudioAsync(string bucketName, string audioId)
+    {
+        try
+        {
+            var request = new GetObjectRequest
+            {
+                BucketName = S3BucketName,
+                Key = $"1111/{bucketName}/{audioId}.mp3"
+            };
+
+            var response = await _s3Client.GetObjectAsync(request);
+            var memoryStream = new MemoryStream();
+            await response.ResponseStream.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+            return memoryStream;
+        }
+        catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+    }
+
     private async Task DeleteAudioFileAsync(string bucketName, string audioId)
     {
         var request = new DeleteObjectRequest
