@@ -180,6 +180,25 @@
             width: 100%;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             text-align: center;
+            position: relative;
+        }
+
+        .btn-speaker-toggle {
+            position: absolute;
+            bottom: 8px;
+            right: 12px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.25rem;
+            color: #888;
+            padding: 4px;
+            line-height: 1;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-speaker-toggle.active {
+            color: #0a84ff;
         }
 
         .prompt {
@@ -363,6 +382,7 @@
             <div class="prompt" id="prompt">Loading...</div>
             <div class="response" id="response"></div>
             <div class="hint" id="hint">Tap anywhere to reveal answer</div>
+            <button class="btn-speaker-toggle" id="speakerToggle" title="Toggle speaker">&#128264;</button>
         </div>
     </div>
     <div class="delete-button-container">
@@ -397,9 +417,12 @@
         const confirmCancel = document.getElementById('confirmCancel');
         const confirmDeleteBtn = document.getElementById('confirmDelete');
 
+        const speakerToggle = document.getElementById('speakerToggle');
+
         let currentPrompt = null;
         let responseRevealed = false;
         let activeBucket = null;
+        let speakerMode = false;
 
         function getBucketName() {
             const params = new URLSearchParams(window.location.search);
@@ -553,6 +576,11 @@
                 promptEl.textContent = pair.prompt;
                 responseEl.textContent = pair.response;
                 deletePairButton.disabled = false;
+
+                if (speakerMode && pair.audioId && activeBucket) {
+                    const audio = new Audio(`/api/pairs/buckets/${encodeURIComponent(activeBucket)}/audio/${encodeURIComponent(pair.audioId)}`);
+                    audio.play();
+                }
             } catch (error) {
                 currentPrompt = null;
                 promptEl.textContent = error.message;
@@ -573,10 +601,17 @@
 
         containerEl.addEventListener('click', handleContainerClick);
 
+        speakerToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            speakerMode = !speakerMode;
+            speakerToggle.classList.toggle('active', speakerMode);
+            speakerToggle.innerHTML = speakerMode ? '&#128266;' : '&#128264;';
+        });
+
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space' && !confirmOverlay.classList.contains('open')) {
                 e.preventDefault();
-                loadNewPair();
+                handleContainerClick();
             }
         });
 
