@@ -46,7 +46,7 @@ public partial class PairsController : ControllerBase
         if (pair == null)
             return NotFound();
 
-        return Ok(new { pair.Prompt, pair.Response });
+        return Ok(new { pair.Prompt, pair.Response, pair.AudioId });
     }
 
     [HttpGet("buckets/{bucketName}")]
@@ -54,7 +54,7 @@ public partial class PairsController : ControllerBase
         [RegularExpression(@"^[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$")] string bucketName)
     {
         var pairs = await _pairsRepository.GetAllPairsAsync(bucketName);
-        return Ok(pairs.Select(p => new { p.Prompt, p.Response }));
+        return Ok(pairs.Select(p => new { p.Prompt, p.Response, p.AudioId }));
     }
 
     [HttpDelete("buckets/{bucketName}/pairs")]
@@ -118,9 +118,9 @@ public partial class PairsController : ControllerBase
                 continue;
 
             var columns = ParseCsvColumns(line);
-            if (columns.Count != 2)
+            if (columns.Count < 2 || columns.Count > 3)
             {
-                return BadRequest($"CSV must have exactly 2 columns. Found {columns.Count} columns in line: {line}");
+                return BadRequest($"CSV must have 2 or 3 columns. Found {columns.Count} columns in line: {line}");
             }
         }
 

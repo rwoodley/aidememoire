@@ -18,11 +18,23 @@ public class S3PairsRepository : IPairsRepository
     {
         var objectKey = $"1111/{bucketName}.csv";
         var existingContent = await GetExistingContentAsync(objectKey);
-        var newRow = $"{EscapeCsvField(prompt)},{EscapeCsvField(response)}";
-        var updatedContent = string.IsNullOrEmpty(existingContent)
-            ? newRow
-            : existingContent + Environment.NewLine + newRow;
 
+        var existingPairs = ParsePairsWithAudioIds(existingContent);
+
+        string audioId;
+        if (existingPairs.TryGetValue(prompt, out var existing))
+        {
+            audioId = existing.AudioId;
+        }
+        else
+        {
+            audioId = Guid.NewGuid().ToString();
+            await CreateEmptyAudioFileAsync(bucketName, audioId);
+        }
+
+        existingPairs[prompt] = (Response: response, AudioId: audioId);
+
+        var updatedContent = BuildCsvContent(existingPairs);
         await UploadContentAsync(objectKey, updatedContent);
     }
 
@@ -64,36 +76,33 @@ public class S3PairsRepository : IPairsRepository
         var objectKey = $"1111/{bucketName}.csv";
         var existingContent = await GetExistingContentAsync(objectKey);
 
-        // Build a dictionary keyed by prompt, preserving insertion order via a list.
-        // Existing pairs go in first, then new pairs overwrite duplicates (last in wins).
-        var pairs = new Dictionary<string, string>();
-        var orderedPrompts = new List<string>();
+        var pairs = ParsePairsWithAudioIds(existingContent);
 
-        void AddPairs(string content)
+        foreach (var line in ParseCsvLines(csvContent))
         {
-            foreach (var line in ParseCsvLines(content))
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            var columns = ParseCsvColumns(line);
+            if (columns.Count < 2)
+                continue;
+
+            var prompt = columns[0];
+            var response = columns[1];
+
+            if (pairs.TryGetValue(prompt, out var existing))
             {
-                if (string.IsNullOrWhiteSpace(line))
-                    continue;
-
-                var columns = ParseCsvColumns(line);
-                if (columns.Count < 2)
-                    continue;
-
-                var prompt = columns[0];
-                if (!pairs.ContainsKey(prompt))
-                    orderedPrompts.Add(prompt);
-
-                pairs[prompt] = line;
+                pairs[prompt] = (Response: response, AudioId: existing.AudioId);
+            }
+            else
+            {
+                var audioId = Guid.NewGuid().ToString();
+                await CreateEmptyAudioFileAsync(bucketName, audioId);
+                pairs[prompt] = (Response: response, AudioId: audioId);
             }
         }
 
-        if (!string.IsNullOrEmpty(existingContent))
-            AddPairs(existingContent);
-
-        AddPairs(csvContent);
-
-        var updatedContent = string.Join(Environment.NewLine, orderedPrompts.Select(p => pairs[p]));
+        var updatedContent = BuildCsvContent(pairs);
         await UploadContentAsync(objectKey, updatedContent);
     }
 
@@ -118,7 +127,11 @@ public class S3PairsRepository : IPairsRepository
         if (columns.Count < 2)
             return null;
 
-        return new Pair(columns[0], columns[1]);
+        var audioId = columns.Count >= 3 && !string.IsNullOrEmpty(columns[2])
+            ? columns[2]
+            : Guid.NewGuid().ToString();
+
+        return new Pair(columns[0], columns[1], audioId);
     }
 
     public async Task<List<Pair>> GetAllPairsAsync(string bucketName)
@@ -139,7 +152,11 @@ public class S3PairsRepository : IPairsRepository
             if (columns.Count < 2)
                 continue;
 
-            pairs.Add(new Pair(columns[0], columns[1]));
+            var audioId = columns.Count >= 3 && !string.IsNullOrEmpty(columns[2])
+                ? columns[2]
+                : Guid.NewGuid().ToString();
+
+            pairs.Add(new Pair(columns[0], columns[1], audioId));
         }
 
         return pairs;
@@ -153,19 +170,36 @@ public class S3PairsRepository : IPairsRepository
         if (string.IsNullOrEmpty(content))
             return;
 
-        var lines = ParseCsvLines(content)
-            .Where(line =>
-            {
-                if (string.IsNullOrWhiteSpace(line))
-                    return false;
+        string? audioIdToDelete = null;
+        var lines = new List<string>();
 
-                var columns = ParseCsvColumns(line);
-                return columns.Count >= 2 && columns[0] != prompt;
-            })
-            .ToList();
+        foreach (var line in ParseCsvLines(content))
+        {
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            var columns = ParseCsvColumns(line);
+            if (columns.Count < 2)
+                continue;
+
+            if (columns[0] == prompt)
+            {
+                if (columns.Count >= 3 && !string.IsNullOrEmpty(columns[2]))
+                    audioIdToDelete = columns[2];
+            }
+            else
+            {
+                lines.Add(line);
+            }
+        }
 
         var updatedContent = string.Join(Environment.NewLine, lines);
         await UploadContentAsync(objectKey, updatedContent);
+
+        if (audioIdToDelete != null)
+        {
+            await DeleteAudioFileAsync(bucketName, audioIdToDelete);
+        }
     }
 
     public async Task CreateBucketAsync(string bucketName)
@@ -196,6 +230,10 @@ public class S3PairsRepository : IPairsRepository
 
     public async Task DeleteBucketAsync(string bucketName)
     {
+        // Delete all audio files under this bucket
+        var audioPrefix = $"1111/{bucketName}/";
+        await DeleteAllObjectsWithPrefixAsync(audioPrefix);
+
         var request = new DeleteObjectRequest
         {
             BucketName = S3BucketName,
@@ -223,6 +261,35 @@ public class S3PairsRepository : IPairsRepository
             BucketName = S3BucketName,
             Key = oldKey
         });
+
+        // Move all audio files from old to new bucket path
+        var oldAudioPrefix = $"1111/{oldName}/";
+        var listRequest = new ListObjectsV2Request
+        {
+            BucketName = S3BucketName,
+            Prefix = oldAudioPrefix
+        };
+
+        var listResponse = await _s3Client.ListObjectsV2Async(listRequest);
+        foreach (var obj in listResponse.S3Objects)
+        {
+            var fileName = Path.GetFileName(obj.Key);
+            var newAudioKey = $"1111/{newName}/{fileName}";
+
+            await _s3Client.CopyObjectAsync(new CopyObjectRequest
+            {
+                SourceBucket = S3BucketName,
+                SourceKey = obj.Key,
+                DestinationBucket = S3BucketName,
+                DestinationKey = newAudioKey
+            });
+
+            await _s3Client.DeleteObjectAsync(new DeleteObjectRequest
+            {
+                BucketName = S3BucketName,
+                Key = obj.Key
+            });
+        }
     }
 
     public async Task<string?> GetDefaultBucketAsync()
@@ -257,6 +324,84 @@ public class S3PairsRepository : IPairsRepository
         };
 
         await _s3Client.PutObjectAsync(request);
+    }
+
+    private async Task CreateEmptyAudioFileAsync(string bucketName, string audioId)
+    {
+        var request = new PutObjectRequest
+        {
+            BucketName = S3BucketName,
+            Key = $"1111/{bucketName}/{audioId}.mp3",
+            ContentBody = "",
+            ContentType = "audio/mpeg"
+        };
+
+        await _s3Client.PutObjectAsync(request);
+    }
+
+    private async Task DeleteAudioFileAsync(string bucketName, string audioId)
+    {
+        var request = new DeleteObjectRequest
+        {
+            BucketName = S3BucketName,
+            Key = $"1111/{bucketName}/{audioId}.mp3"
+        };
+
+        await _s3Client.DeleteObjectAsync(request);
+    }
+
+    private async Task DeleteAllObjectsWithPrefixAsync(string prefix)
+    {
+        var listRequest = new ListObjectsV2Request
+        {
+            BucketName = S3BucketName,
+            Prefix = prefix
+        };
+
+        var listResponse = await _s3Client.ListObjectsV2Async(listRequest);
+        foreach (var obj in listResponse.S3Objects)
+        {
+            await _s3Client.DeleteObjectAsync(new DeleteObjectRequest
+            {
+                BucketName = S3BucketName,
+                Key = obj.Key
+            });
+        }
+    }
+
+    private Dictionary<string, (string Response, string AudioId)> ParsePairsWithAudioIds(string content)
+    {
+        var pairs = new Dictionary<string, (string Response, string AudioId)>();
+
+        if (string.IsNullOrEmpty(content))
+            return pairs;
+
+        foreach (var line in ParseCsvLines(content))
+        {
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            var columns = ParseCsvColumns(line);
+            if (columns.Count < 2)
+                continue;
+
+            var prompt = columns[0];
+            var response = columns[1];
+            var audioId = columns.Count >= 3 && !string.IsNullOrEmpty(columns[2])
+                ? columns[2]
+                : Guid.NewGuid().ToString();
+
+            pairs[prompt] = (Response: response, AudioId: audioId);
+        }
+
+        return pairs;
+    }
+
+    private static string BuildCsvContent(Dictionary<string, (string Response, string AudioId)> pairs)
+    {
+        var lines = pairs.Select(kvp =>
+            $"{EscapeCsvField(kvp.Key)},{EscapeCsvField(kvp.Value.Response)},{kvp.Value.AudioId}");
+        return string.Join(Environment.NewLine, lines);
     }
 
     private static string EscapeCsvField(string field)
