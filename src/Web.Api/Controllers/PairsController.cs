@@ -57,6 +57,15 @@ public partial class PairsController : ControllerBase
         return Ok(pairs.Select(p => new { p.Prompt, p.Response, p.AudioId }));
     }
 
+    [HttpPut("buckets/{bucketName}/pairs")]
+    public async Task<IActionResult> UpdatePair(
+        [RegularExpression(@"^[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$")] string bucketName,
+        [FromBody] UpdatePairRequest request)
+    {
+        await _pairsRepository.UpdatePairAsync(bucketName, request.OldPrompt, request.NewPrompt, request.NewResponse);
+        return Ok();
+    }
+
     [HttpDelete("buckets/{bucketName}/pairs")]
     public async Task<IActionResult> DeletePair(
         [RegularExpression(@"^[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$")] string bucketName,

@@ -11,10 +11,10 @@ Overview:
 - Deployed automatically from Github on every push
 - Github Actions handles the build
 
-Steps:
+Steps for manual deployment:
 
 ```
-
+# YOU DON'T NEED TO DO THIS! GITHUB WILL DO IT AUTOMATICALLY!!!
 aws ecr get-login-password --region us-east-1 --profile apprunner-deployer | docker login --username AWS --password-stdin 445753231799.dkr.ecr.us-east-1.amazonaws.com
 
 # Build for x86_64/AMD64 (App Runner's architecture)

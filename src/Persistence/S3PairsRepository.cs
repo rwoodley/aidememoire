@@ -172,6 +172,40 @@ public class S3PairsRepository : IPairsRepository
         return pairs;
     }
 
+    public async Task UpdatePairAsync(string bucketName, string oldPrompt, string newPrompt, string newResponse)
+    {
+        var objectKey = $"1111/{bucketName}.csv";
+        var content = await GetExistingContentAsync(objectKey);
+        var pairs = ParsePairsWithAudioIds(content);
+
+        if (!pairs.TryGetValue(oldPrompt, out var existing))
+            return;
+
+        var oldAudioId = existing.AudioId;
+        pairs.Remove(oldPrompt);
+
+        string audioId;
+        if (oldPrompt == newPrompt)
+        {
+            audioId = oldAudioId;
+        }
+        else
+        {
+            audioId = Guid.NewGuid().ToString();
+        }
+
+        pairs[newPrompt] = (Response: newResponse, AudioId: audioId);
+
+        var updatedContent = BuildCsvContent(pairs);
+        await UploadContentAsync(objectKey, updatedContent);
+
+        if (oldPrompt != newPrompt)
+        {
+            await DeleteAudioFileAsync(bucketName, oldAudioId);
+            await _audioGenerationService.GenerateAudioAsync(bucketName, new List<(string, string)> { (audioId, newPrompt) });
+        }
+    }
+
     public async Task DeletePairAsync(string bucketName, string prompt)
     {
         var objectKey = $"1111/{bucketName}.csv";

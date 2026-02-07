@@ -217,7 +217,8 @@
         }
 
         .pair-table .col-actions {
-            width: 40px;
+            width: 80px;
+            white-space: nowrap;
             text-align: center;
             padding-left: 8px;
         }
@@ -250,6 +251,67 @@
 
         .btn-delete-pair:hover {
             background: #3a2020;
+        }
+
+        .btn-edit-pair {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 6px;
+            color: #0a84ff;
+            font-size: 1.1rem;
+            line-height: 1;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.2s;
+        }
+
+        .btn-edit-pair:hover {
+            background: #1a2a3a;
+        }
+
+        .edit-input {
+            width: 100%;
+            padding: 6px 8px;
+            background: #2a2a2a;
+            color: #e0e0e0;
+            border: 1px solid #555;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+
+        .edit-input:focus {
+            outline: none;
+            border-color: #0a84ff;
+        }
+
+        .btn-save-pair, .btn-cancel-pair {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            line-height: 1;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.2s;
+        }
+
+        .btn-save-pair {
+            color: #30d158;
+        }
+
+        .btn-save-pair:hover {
+            background: #1a3a1a;
+        }
+
+        .btn-cancel-pair {
+            color: #888;
+        }
+
+        .btn-cancel-pair:hover {
+            background: #2a2a2a;
         }
 
         .pair-count {
@@ -475,6 +537,13 @@
                     const tdActions = document.createElement('td');
                     tdActions.className = 'col-actions';
 
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'btn-edit-pair';
+                    editBtn.innerHTML = '&#9998;';
+                    editBtn.title = 'Edit pair';
+                    editBtn.addEventListener('click', () => editPair(pair, tr));
+                    tdActions.appendChild(editBtn);
+
                     const deleteBtn = document.createElement('button');
                     deleteBtn.className = 'btn-delete-pair';
                     deleteBtn.innerHTML = '&#128465;';
@@ -517,6 +586,113 @@
                     }
                 }
             } catch {}
+        }
+
+        function editPair(pair, tr) {
+            const tdPrompt = tr.children[0];
+            const tdResponse = tr.children[1];
+            const tdActions = tr.children[2];
+
+            const origPromptHTML = tdPrompt.innerHTML;
+            const origResponseHTML = tdResponse.innerHTML;
+            const origActionsHTML = tdActions.innerHTML;
+
+            const promptInput = document.createElement('input');
+            promptInput.type = 'text';
+            promptInput.className = 'edit-input';
+            promptInput.value = pair.prompt;
+
+            const responseInput = document.createElement('input');
+            responseInput.type = 'text';
+            responseInput.className = 'edit-input';
+            responseInput.value = pair.response;
+
+            tdPrompt.innerHTML = '';
+            tdPrompt.appendChild(promptInput);
+
+            tdResponse.innerHTML = '';
+            tdResponse.appendChild(responseInput);
+
+            tdActions.innerHTML = '';
+
+            const saveBtn = document.createElement('button');
+            saveBtn.className = 'btn-save-pair';
+            saveBtn.innerHTML = '&#10003;';
+            saveBtn.title = 'Save';
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'btn-cancel-pair';
+            cancelBtn.innerHTML = '&#10005;';
+            cancelBtn.title = 'Cancel';
+
+            function restoreRow() {
+                tdPrompt.innerHTML = origPromptHTML;
+                tdResponse.innerHTML = origResponseHTML;
+                tdActions.innerHTML = origActionsHTML;
+            }
+
+            cancelBtn.addEventListener('click', restoreRow);
+
+            saveBtn.addEventListener('click', async () => {
+                const newPrompt = promptInput.value.trim();
+                const newResponse = responseInput.value.trim();
+                if (!newPrompt || !newResponse) return;
+
+                saveBtn.disabled = true;
+                cancelBtn.disabled = true;
+
+                try {
+                    const response = await fetch(`/api/pairs/buckets/${encodeURIComponent(bucketName)}/pairs`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ oldPrompt: pair.prompt, newPrompt, newResponse })
+                    });
+
+                    if (response.ok) {
+                        pair.prompt = newPrompt;
+                        pair.response = newResponse;
+
+                        tdPrompt.textContent = newPrompt;
+                        if (pair.audioId) {
+                            const speakerBtn = document.createElement('button');
+                            speakerBtn.className = 'btn-speaker';
+                            speakerBtn.innerHTML = '&#128264;';
+                            speakerBtn.title = 'Play audio';
+                            speakerBtn.addEventListener('click', () => {
+                                const audio = new Audio(`/api/pairs/buckets/${encodeURIComponent(bucketName)}/audio/${encodeURIComponent(pair.audioId)}`);
+                                audio.play();
+                            });
+                            tdPrompt.appendChild(speakerBtn);
+                        }
+
+                        tdResponse.textContent = newResponse;
+
+                        tdActions.innerHTML = '';
+                        const newEditBtn = document.createElement('button');
+                        newEditBtn.className = 'btn-edit-pair';
+                        newEditBtn.innerHTML = '&#9998;';
+                        newEditBtn.title = 'Edit pair';
+                        newEditBtn.addEventListener('click', () => editPair(pair, tr));
+                        tdActions.appendChild(newEditBtn);
+
+                        const newDeleteBtn = document.createElement('button');
+                        newDeleteBtn.className = 'btn-delete-pair';
+                        newDeleteBtn.innerHTML = '&#128465;';
+                        newDeleteBtn.title = 'Delete pair';
+                        newDeleteBtn.addEventListener('click', () => deletePair(pair.prompt, tr));
+                        tdActions.appendChild(newDeleteBtn);
+                    } else {
+                        restoreRow();
+                    }
+                } catch {
+                    restoreRow();
+                }
+            });
+
+            tdActions.appendChild(saveBtn);
+            tdActions.appendChild(cancelBtn);
+
+            promptInput.focus();
         }
 
         loadPairs();

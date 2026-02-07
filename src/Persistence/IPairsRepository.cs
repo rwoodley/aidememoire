@@ -9,6 +9,7 @@ public interface IPairsRepository
     Task CreateBucketAsync(string bucketName);
     Task<List<string>> ListBucketsAsync();
     Task DeletePairAsync(string bucketName, string prompt);
+    Task UpdatePairAsync(string bucketName, string oldPrompt, string newPrompt, string newResponse);
     Task DeleteBucketAsync(string bucketName);
     Task RenameBucketAsync(string oldName, string newName);
     Task<string?> GetDefaultBucketAsync();
